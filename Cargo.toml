@@ -1,0 +1,13 @@
+[package]
+name = "acter_queue"
+version = "0.1.0"
+authors = ["yi lu <luyikk@126.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "0.2", features = ["full"] }
+async-trait = "0.1.41"
+deque = "0.3.2"
+async-oneshot = "0.4.2"
