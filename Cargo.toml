@@ -1,8 +1,13 @@
 [package]
 name = "acter_queue"
 version = "0.1.0"
-authors = ["yi lu <luyikk@126.com>"]
+authors = ["luyi <luyikk@126.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/luyikk/actor_queue"
+documentation = "https://docs.rs/actor_queue"
+description = "fast speed thread safe async execute queue."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
