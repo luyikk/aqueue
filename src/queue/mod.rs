@@ -11,8 +11,9 @@ use std::error::Error;
 pub use fn_one::AQueueItem;
 use std::sync::atomic::{AtomicU8, Ordering};
 use async_oneshot::{ Receiver};
-use deque::{Worker,new} ;
+use deque::{Worker,Stealer,new} ;
 use std::future::Future;
+use deque::Stolen::Data;
 
 const IDLE:u8=0;
 const OPEN:u8=1;
@@ -20,6 +21,7 @@ const OPEN:u8=1;
 
 pub struct AQueue{
     worker:Worker<Box<dyn QueueItem+Send+Sync>>,
+    stealer:Stealer<Box<dyn QueueItem+Send+Sync>>,
     status:AtomicU8
 }
 
@@ -28,9 +30,10 @@ unsafe impl Sync for AQueue{}
 
 impl AQueue{
     pub fn new()->AQueue{
-        let (wk,_)=new();
+        let (wk,stl)=new();
         AQueue{
             worker:wk,
+            stealer:stl,
             status:AtomicU8::new(IDLE)
         }
     }
@@ -59,9 +62,11 @@ impl AQueue{
         if  self.status.compare_and_swap(IDLE,OPEN,Ordering::AcqRel)==IDLE {
             loop {
                 let item = {
-                    match self.worker.pop() {
-                        Some(item) => item,
-                        None => {
+                    match self.stealer.steal() {
+                        Data(p)=>{
+                            p
+                        }
+                        _ => {
                             if self.status.compare_and_swap(OPEN, IDLE, Ordering::AcqRel) == OPEN {
                                 break;
                             } else {

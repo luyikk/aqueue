@@ -5,7 +5,7 @@ use std::error::Error;
 use tokio::time::{delay_for, Duration};
 use std::sync::Arc;
 use std::time::Instant;
-use acter_queue::AQueue;
+use aqueue::AQueue;
 
 static mut VALUE:i32=0;
 
