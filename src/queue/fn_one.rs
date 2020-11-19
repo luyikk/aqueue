@@ -2,7 +2,7 @@ use std::future::Future;
 use std::error::Error;
 use aqueue_trait::async_trait;
 use std::cell::RefCell;
-use async_oneshot::{oneshot,Receiver,Sender};
+use tokio::sync::oneshot::{Receiver,Sender,channel};
 use super::QueueItem;
 
 
@@ -53,7 +53,7 @@ impl <A,T,S> AQueueItem<A,T,S>
           S:'static, A: Send+Sync+'static {
     #[inline]
     pub fn new(call:impl FnOnce(A)->T+ Send+Sync+'static,arg:A)->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
-        let (tx,rx)=oneshot();
+        let (tx,rx)=channel();
         (rx, Box::new(AQueueItem{
             arg:RefCell::new(Some(arg)),
             call:RefCell::new(Some(Box::new(call))),

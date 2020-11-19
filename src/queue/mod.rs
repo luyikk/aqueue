@@ -10,7 +10,7 @@ use std::error::Error;
 
 pub use fn_one::AQueueItem;
 use std::sync::atomic::{AtomicU8, Ordering};
-use async_oneshot::{ Receiver};
+use tokio::sync::oneshot::{ Receiver};
 use deque::{Worker,Stealer,new} ;
 use std::future::Future;
 use deque::Stolen::Data;
