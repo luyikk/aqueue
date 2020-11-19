@@ -2,7 +2,7 @@ use std::future::Future;
 use std::error::Error;
 use aqueue_trait::async_trait;
 use std::cell::RefCell;
-use tokio::sync::oneshot::{Receiver,Sender,channel};
+use async_oneshot::{Receiver,Sender,oneshot};
 use super::QueueItem;
 
 
@@ -28,7 +28,6 @@ impl<A,T,S> QueueItem for AQueueItem<A,T,S>
         if let Some(call) = call {
             let arg= self.arg.replace(None).unwrap();
             let res=  (call)(arg).await;
-
             if let Some(x)= self.result_sender.replace(None){
                 if x.send(res).is_err() {
                     Err("close".into())
@@ -53,7 +52,7 @@ impl <A,T,S> AQueueItem<A,T,S>
           S:'static, A: Send+Sync+'static {
     #[inline]
     pub fn new(call:impl FnOnce(A)->T+ Send+Sync+'static,arg:A)->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
-        let (tx,rx)=channel();
+        let (tx,rx)=oneshot();
         (rx, Box::new(AQueueItem{
             arg:RefCell::new(Some(arg)),
             call:RefCell::new(Some(Box::new(call))),

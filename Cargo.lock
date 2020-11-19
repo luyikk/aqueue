@@ -2,9 +2,10 @@
 # It is not intended for manual editing.
 [[package]]
 name = "aqueue"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "aqueue_trait",
+ "async-oneshot",
  "deque",
  "tokio",
 ]
@@ -16,6 +17,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "async-oneshot"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50f4770cbbff928c30a991de67fb3976f44d8e3e202f8c79ef91b47006e04904"
+dependencies = [
+ "futures-micro",
 ]
 
 [[package]]
@@ -69,6 +79,12 @@ name = "futures-core"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "847ce131b72ffb13b6109a221da9ad97a64cbe48feb1028356b836b47b8f1748"
+
+[[package]]
+name = "futures-micro"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e9325be55c5581082cd110294fa988c1f920bc573ec370ef201e33c469a95a"
 
 [[package]]
 name = "hermit-abi"

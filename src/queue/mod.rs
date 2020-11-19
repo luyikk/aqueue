@@ -10,7 +10,7 @@ use std::error::Error;
 
 pub use fn_one::AQueueItem;
 use std::sync::atomic::{AtomicU8, Ordering};
-use tokio::sync::oneshot::{ Receiver};
+use async_oneshot::{ Receiver};
 use deque::{Worker,Stealer,new} ;
 use std::future::Future;
 use deque::Stolen::Data;
@@ -59,7 +59,7 @@ impl AQueue{
 
     #[inline]
     pub async fn run_ing(&self)->Result<(), Box<dyn Error+Send+Sync>>{
-        if  self.status.compare_and_swap(IDLE,OPEN,Ordering::AcqRel)==IDLE {
+        if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
             loop {
                 let item = {
                     match self.stealer.steal() {
@@ -67,7 +67,7 @@ impl AQueue{
                             p
                         }
                         _ => {
-                            if self.status.compare_and_swap(OPEN, IDLE, Ordering::AcqRel) == OPEN {
+                            if self.status.compare_and_swap(OPEN, IDLE, Ordering::Release) == OPEN {
                                 break;
                             } else {
                                 panic!("error status")
@@ -78,6 +78,7 @@ impl AQueue{
 
                 item.run().await?;
             }
+
         }
 
         Ok(())
