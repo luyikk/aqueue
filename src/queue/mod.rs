@@ -14,14 +14,17 @@ use async_oneshot::{ Receiver};
 use deque::{Worker,Stealer,new} ;
 use std::future::Future;
 use deque::Stolen::Data;
+use std::collections::VecDeque;
+use tokio::sync::Mutex;
 
 const IDLE:u8=0;
 const OPEN:u8=1;
 
 
 pub struct AQueue{
-    worker:Worker<Box<dyn QueueItem+Send+Sync>>,
-    stealer:Stealer<Box<dyn QueueItem+Send+Sync>>,
+    // worker:Worker<Box<dyn QueueItem+Send+Sync>>,
+    // stealer:Stealer<Box<dyn QueueItem+Send+Sync>>,
+    deque:Mutex<VecDeque<Box<dyn QueueItem+Send+Sync>>>,
     status:AtomicU8
 }
 
@@ -30,10 +33,11 @@ unsafe impl Sync for AQueue{}
 
 impl AQueue{
     pub fn new()->AQueue{
-        let (wk,stl)=new();
+       // let (wk,stl)=new();
         AQueue{
-            worker:wk,
-            stealer:stl,
+            // worker:wk,
+            // stealer:stl,
+            deque:Mutex::new(VecDeque::new()),
             status:AtomicU8::new(IDLE)
         }
     }
@@ -48,7 +52,8 @@ impl AQueue{
 
     #[inline]
     pub async fn push<T>(&self,(rx,item):(Receiver<Result<T, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>))->Result<T, Box<dyn Error+Send+Sync>>{
-        self.worker.push(item);
+        //self.worker.push(item);
+        self.deque.lock().await.push_front(item);
         self.run_ing().await?;
         match rx.await {
             Ok(x)=>Ok(x?),
@@ -62,8 +67,20 @@ impl AQueue{
         if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
             loop {
                 let item = {
-                    match self.stealer.steal() {
-                        Data(p)=>{
+                    // match self.stealer.steal() {
+                    //     Data(p)=>{
+                    //         p
+                    //     }
+                    //     _ => {
+                    //         if self.status.compare_and_swap(OPEN, IDLE, Ordering::Release) == OPEN {
+                    //             break;
+                    //         } else {
+                    //             panic!("error status")
+                    //         }
+                    //     }
+                    // }
+                    match self.deque.lock().await.pop_back() {
+                        Some(p)=>{
                             p
                         }
                         _ => {
