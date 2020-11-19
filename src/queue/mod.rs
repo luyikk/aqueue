@@ -11,20 +11,15 @@ use std::error::Error;
 pub use fn_one::AQueueItem;
 use std::sync::atomic::{AtomicU8, Ordering};
 use async_oneshot::{ Receiver};
-use deque::{Worker,Stealer,new} ;
 use std::future::Future;
-use deque::Stolen::Data;
-use std::collections::VecDeque;
-use tokio::sync::Mutex;
+use concurrent_queue::ConcurrentQueue;
 
 const IDLE:u8=0;
 const OPEN:u8=1;
 
 
 pub struct AQueue{
-    // worker:Worker<Box<dyn QueueItem+Send+Sync>>,
-    // stealer:Stealer<Box<dyn QueueItem+Send+Sync>>,
-    deque:Mutex<VecDeque<Box<dyn QueueItem+Send+Sync>>>,
+    deque:ConcurrentQueue<Box<dyn QueueItem+Send+Sync>>,
     status:AtomicU8
 }
 
@@ -33,11 +28,8 @@ unsafe impl Sync for AQueue{}
 
 impl AQueue{
     pub fn new()->AQueue{
-       // let (wk,stl)=new();
         AQueue{
-            // worker:wk,
-            // stealer:stl,
-            deque:Mutex::new(VecDeque::new()),
+            deque:ConcurrentQueue::unbounded(),
             status:AtomicU8::new(IDLE)
         }
     }
@@ -52,8 +44,9 @@ impl AQueue{
 
     #[inline]
     pub async fn push<T>(&self,(rx,item):(Receiver<Result<T, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>))->Result<T, Box<dyn Error+Send+Sync>>{
-        //self.worker.push(item);
-        self.deque.lock().await.push_front(item);
+        if let Err(er)= self.deque.push(item){
+            return Err(er.to_string().into())
+        }
         self.run_ing().await?;
         match rx.await {
             Ok(x)=>Ok(x?),
@@ -79,8 +72,8 @@ impl AQueue{
                     //         }
                     //     }
                     // }
-                    match self.deque.lock().await.pop_back() {
-                        Some(p)=>{
+                    match self.deque.pop() {
+                        Ok(p)=>{
                             p
                         }
                         _ => {
