@@ -2,12 +2,21 @@
 # It is not intended for manual editing.
 [[package]]
 name = "aqueue"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
+ "aqueue_trait",
  "async-oneshot",
- "async-trait",
  "deque",
  "tokio",
+]
+
+[[package]]
+name = "aqueue_trait"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -17,15 +26,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50f4770cbbff928c30a991de67fb3976f44d8e3e202f8c79ef91b47006e04904"
 dependencies = [
  "futures-micro",
-]
-
-[[package]]
-name = "async-trait"
-version = "0.1.41"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

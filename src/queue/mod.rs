@@ -1,5 +1,5 @@
 mod fn_one;
-use async_trait::async_trait;
+use aqueue_trait::async_trait;
 
 #[async_trait]
 pub trait QueueItem{

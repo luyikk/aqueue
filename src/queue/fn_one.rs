@@ -1,6 +1,6 @@
 use std::future::Future;
 use std::error::Error;
-use async_trait::async_trait;
+use aqueue_trait::async_trait;
 use std::cell::RefCell;
 use async_oneshot::{oneshot,Receiver,Sender};
 use super::QueueItem;
