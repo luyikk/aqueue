@@ -13,6 +13,6 @@ description = "fast speed thread safe async execute queue."
 
 [dependencies]
 tokio = { version = "0.2", features = ["full"] }
-aqueue_trait = {path="async-trait"}
+aqueue_trait = {path="async-trait",version="0.1.0"}
 deque = "0.3.2"
 async-oneshot = "0.4.2"
