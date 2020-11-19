@@ -1,0 +1,4 @@
+brace_style="PreferSameLine"
+fn_args_layout="Compressed"
+imports_indent="Visual"
+max_width=150

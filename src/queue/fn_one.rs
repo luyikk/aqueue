@@ -8,7 +8,7 @@ use super::QueueItem;
 
 pub struct AQueueItem<A,T,S>{
     arg:RefCell<Option<A>>,
-    call:RefCell<Option<Box<dyn FnOnce(A)->T+ Send>>>,
+    call:RefCell<Option<Box<dyn FnOnce(A)->T+ Send+Sync>>>,
     result_sender:RefCell<Option<Sender<Result<S, Box<dyn Error+Send+Sync>>>>>
 }
 
@@ -19,7 +19,7 @@ unsafe impl<A,T,S> Sync for AQueueItem<A,T,S>{}
 
 #[async_trait]
 impl<A,T,S> QueueItem for AQueueItem<A,T,S>
-    where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync, A: Send{
+    where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync, A: Send+Sync{
 
     #[inline]
     async fn run(&self) -> Result<(), Box<dyn Error+Send+Sync>> {
@@ -50,9 +50,9 @@ impl<A,T,S> QueueItem for AQueueItem<A,T,S>
 
 impl <A,T,S> AQueueItem<A,T,S>
     where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
-          S:'static, A: Send +'static {
+          S:'static, A: Send+Sync+'static {
     #[inline]
-    pub fn new(call:impl FnOnce(A)->T+ Send+'static,arg:A)->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
+    pub fn new(call:impl FnOnce(A)->T+ Send+Sync+'static,arg:A)->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
         let (tx,rx)=oneshot();
         (rx, Box::new(AQueueItem{
             arg:RefCell::new(Some(arg)),

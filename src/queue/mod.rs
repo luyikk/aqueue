@@ -39,9 +39,9 @@ impl AQueue{
     }
 
     #[inline]
-    pub async fn run<A,T,S>(&self, call:impl FnOnce(A)->T+ Send+'static, arg:A) ->Result<S, Box<dyn Error+Send+Sync>>
+    pub async fn run<A,T,S>(&self, call:impl FnOnce(A)->T+ Send+Sync+'static, arg:A) ->Result<S, Box<dyn Error+Send+Sync>>
     where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
-          S:'static, A: 'static + Send {
+          S:'static, A: Send+Sync+'static {
         let x= AQueueItem::new(call,arg);
         self.push(x).await
     }

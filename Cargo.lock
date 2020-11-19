@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "aqueue"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-oneshot",
  "async-trait",
@@ -22,8 +22,6 @@ dependencies = [
 [[package]]
 name = "async-trait"
 version = "0.1.41"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b246867b8b3b6ae56035f1eb1ed557c1d8eae97f0d53696138a50fa0e3a3b8c0"
 dependencies = [
  "proc-macro2",
  "quote",
