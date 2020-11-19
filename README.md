@@ -2,7 +2,7 @@
 
 #Examples
 ```rust
-use acter_queue::AQueue;
+use aqueue::AQueue;
 static mut VALUE:i32=0;
 
 #[tokio::main]
