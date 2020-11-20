@@ -16,14 +16,10 @@ impl<T> InnerStore<T>{
     }
     #[inline]
     pub unsafe  fn get_mut(&self)->&mut T{
-        unsafe{
             &mut *self.0.get()
-        }
     }
     #[inline]
     pub unsafe fn get(&self)->&T{
-        unsafe{
             &*self.0.get()
-        }
     }
 }
