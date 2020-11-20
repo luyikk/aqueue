@@ -60,18 +60,6 @@ impl AQueue{
         if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
             loop {
                 let item = {
-                    // match self.stealer.steal() {
-                    //     Data(p)=>{
-                    //         p
-                    //     }
-                    //     _ => {
-                    //         if self.status.compare_and_swap(OPEN, IDLE, Ordering::Release) == OPEN {
-                    //             break;
-                    //         } else {
-                    //             panic!("error status")
-                    //         }
-                    //     }
-                    // }
                     match self.deque.pop() {
                         Ok(p)=>{
                             p
