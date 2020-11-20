@@ -43,7 +43,8 @@ impl AQueue{
     }
 
     #[inline]
-    pub async fn push<T>(&self,(rx,item):(Receiver<Result<T, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>))->Result<T, Box<dyn Error+Send+Sync>>{
+    pub async fn push<T>(&self,(rx,item):(Receiver<Result<T, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>))
+        ->Result<T, Box<dyn Error+Send+Sync>>{
         if let Err(er)= self.deque.push(item){
             return Err(er.to_string().into())
         }

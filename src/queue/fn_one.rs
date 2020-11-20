@@ -51,7 +51,8 @@ impl <A,T,S> AQueueItem<A,T,S>
     where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
           S:'static, A: Send+Sync+'static {
     #[inline]
-    pub fn new(call:impl FnOnce(A)->T+ Send+Sync+'static,arg:A)->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
+    pub fn new(call:impl FnOnce(A)->T+ Send+Sync+'static,arg:A)
+        ->(Receiver<Result<S, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>){
         let (tx,rx)=oneshot();
         (rx, Box::new(AQueueItem{
             arg:RefCell::new(Some(arg)),

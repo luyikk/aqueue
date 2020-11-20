@@ -15,13 +15,13 @@ impl<T> InnerStore<T>{
         InnerStore(UnsafeCell::new(x))
     }
     #[inline]
-    pub fn get_mut(&self)->&mut T{
+    pub unsafe  fn get_mut(&self)->&mut T{
         unsafe{
             &mut *self.0.get()
         }
     }
     #[inline]
-    pub fn get(&self)->&T{
+    pub unsafe fn get(&self)->&T{
         unsafe{
             &*self.0.get()
         }
