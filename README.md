@@ -23,7 +23,7 @@ async fn main()->Result<(),Box<dyn Error+Sync+Send>> {
 
 ```
 
-# Examples Actor
+# Examples Actor Struct
 ```rust
 #![feature(async_closure)]
 use aqueue::AQueue;
@@ -161,3 +161,4 @@ async fn main() {
     }
 }
 ```
+

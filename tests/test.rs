@@ -102,6 +102,9 @@ async fn test_string()-> Result<(), Box<dyn Error + Sync + Send>>{
 
 use aqueue::aqueue_trait;
 use std::cell::Cell;
+use aqueue::actor::{Actor};
+use tokio::task::JoinHandle;
+
 
 #[tokio::test]
 async fn test_struct() {
@@ -201,6 +204,72 @@ async fn test_struct() {
 
     a.await.unwrap();
     b.await.unwrap();
+}
 
 
+#[tokio::test]
+async fn test_actor()->Result<(),Box<dyn Error+ Send + Sync>>{
+
+    #[derive(Default)]
+    struct Foo{
+        i:i32,
+        x:i32,
+        y:i32
+    }
+
+    impl Foo{
+
+        pub fn get(&self)->(i32,i32,i32){
+            (self.i,self.x,self.y)
+        }
+        pub async fn set(&mut self,x:i32,y:i32)->i32{
+            self.x+=x;
+            self.y+=y;
+            delay_for(Duration::from_millis(1)).await;
+            println!("{} {}",self.x,self.y);
+            self.i+=1;
+            self.i
+        }
+    }
+
+    #[aqueue_trait]
+    pub trait FooRunner{
+        async fn set(&self,x:i32,y:i32)-> Result<i32,Box<dyn Error+Sync+Send>>;
+        async fn get(&self)->Result<(i32,i32,i32),Box<dyn Error+Sync+Send>>;
+    }
+
+    #[aqueue_trait]
+    impl FooRunner for Actor<Foo>{
+        async fn set(&self, x: i32, y: i32) -> Result<i32, Box<dyn Error + Sync + Send>> {
+            self.inner_call(async move|inner|  {
+                Ok(inner.get_mut().set(x,y).await)
+            }).await
+        }
+
+        async fn get(&self) -> Result<(i32, i32, i32), Box<dyn Error + Sync + Send>> {
+            self.inner_call(async move|inner|  {
+                Ok(inner.get().get())
+            }).await
+        }
+
+
+    }
+
+    let a_foo=Arc::new(Actor::new(Foo::default()));
+    let b_foo=a_foo.clone();
+    let b:JoinHandle<Result<(),Box<dyn Error+Send+Sync>>>=tokio::spawn(async move{
+        for i in 0..100 {
+            let x= b_foo.set(i-1,i+1).await?;
+            println!("i:{}",x);
+        }
+        Ok(())
+    });
+
+    for i in 200..300 {
+        let x= a_foo.set(i-1,i+1).await?;
+        println!("i:{}",x);
+    }
+    b.await??;
+    assert_eq!((200,29700,30100),a_foo.get().await?);
+    Ok(())
 }
