@@ -1,22 +1,19 @@
 mod fn_one;
 use aqueue_trait::async_trait;
+use std::error::Error;
+use std::sync::atomic::{AtomicU8, Ordering};
+use async_oneshot::{ Receiver};
+use std::future::Future;
+use concurrent_queue::ConcurrentQueue;
+pub use fn_one::AQueueItem;
 
 #[async_trait]
 pub trait QueueItem{
     async fn run(&self)->Result<(), Box<dyn Error+Send+Sync>>;
 }
 
-use std::error::Error;
-
-pub use fn_one::AQueueItem;
-use std::sync::atomic::{AtomicU8, Ordering};
-use async_oneshot::{ Receiver};
-use std::future::Future;
-use concurrent_queue::ConcurrentQueue;
-
 const IDLE:u8=0;
 const OPEN:u8=1;
-
 
 pub struct AQueue{
     deque:ConcurrentQueue<Box<dyn QueueItem+Send+Sync>>,
