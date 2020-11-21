@@ -38,8 +38,7 @@ impl AQueue{
     pub async fn run<A,T,S>(&self, call:impl FnOnce(A)->T+ Send+Sync+'static, arg:A) ->Result<S, Box<dyn Error+Send+Sync>>
     where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
           S:'static, A: Send+Sync+'static {
-        let x= AQueueItem::new(call,arg);
-        self.push(x).await
+        self.push(AQueueItem::new(call,arg)).await
     }
 
     #[inline]
@@ -59,7 +58,7 @@ impl AQueue{
     #[inline]
     pub async fn run_ing(&self)->Result<(), Box<dyn Error+Send+Sync>>{
         if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
-            loop {
+            'recv:loop {
                 let item = {
                     match self.deque.pop() {
                         Ok(p)=>{
@@ -67,7 +66,7 @@ impl AQueue{
                         }
                         _ => {
                             if self.status.compare_and_swap(OPEN, IDLE, Ordering::Release) == OPEN {
-                                break;
+                                break 'recv;
                             } else {
                                 panic!("error status")
                             }
