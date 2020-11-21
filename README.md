@@ -177,24 +177,19 @@ struct Foo{
     i:i128
 }
 
-impl Foo{
-    #[inline]
+impl Foo{  
     pub fn add(&mut self,x:i32)->i128{
         self.count+=1;
         self.i+=x as i128;
         self.i
-    }
-    #[inline]
+    }   
     fn reset(&mut self){
         self.count=0;
         self.i=0;
-    }
-    #[inline]
+    }   
     pub fn get(&self)->i128{
         self.i
-    }
-
-    #[inline]
+    }   
     pub fn get_count(&self)->u64{
         self.count
     }
@@ -209,29 +204,22 @@ pub trait FooRunner{
 }
 
 #[aqueue::aqueue_trait]
-impl FooRunner for Actor<Foo> {
-    #[inline]
+impl FooRunner for Actor<Foo> {  
     async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>{
         self.inner_call(async move |inner|{
             Ok(inner.get_mut().add(x))
         }).await
-    }
-
-    #[inline]
+    }  
     async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>{
         self.inner_call(async move |inner| {
             Ok(inner.get_mut().reset())
         }).await
-    }
-
-    #[inline]
+    }  
     async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>{
         self.inner_call(async move |inner|{
             Ok(inner.get_mut().get())
         }).await
-    }
-
-    #[inline]
+    }  
     async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>{
         self.inner_call(async move |inner| {
             Ok(inner.get_mut().get_count())
