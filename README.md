@@ -1,6 +1,6 @@
 # fast speed thread safe async execute queue
 
-# Examples
+# Examples Basic
 ```rust
 use aqueue::AQueue;
 static mut VALUE:i32=0;
@@ -162,3 +162,150 @@ async fn main() {
 }
 ```
 
+# Examples Actor Trait
+```rust
+#![feature(async_closure)]
+use aqueue::Actor;
+use std::sync::Arc;
+use std::error::Error;
+use std::time::Instant;
+
+
+#[derive(Default)]
+struct Foo{
+    count:u64,
+    i:i128
+}
+
+impl Foo{
+    #[inline]
+    pub fn add(&mut self,x:i32)->i128{
+        self.count+=1;
+        self.i+=x as i128;
+        self.i
+    }
+    #[inline]
+    fn reset(&mut self){
+        self.count=0;
+        self.i=0;
+    }
+    #[inline]
+    pub fn get(&self)->i128{
+        self.i
+    }
+
+    #[inline]
+    pub fn get_count(&self)->u64{
+        self.count
+    }
+}
+
+#[aqueue::aqueue_trait]
+pub trait FooRunner{
+    async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>;
+    async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>;
+    async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>;
+    async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>;
+}
+
+#[aqueue::aqueue_trait]
+impl FooRunner for Actor<Foo> {
+    #[inline]
+    async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>{
+        self.inner_call(async move |inner|{
+            Ok(inner.get_mut().add(x))
+        }).await
+    }
+
+    #[inline]
+    async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>{
+        self.inner_call(async move |inner| {
+            Ok(inner.get_mut().reset())
+        }).await
+    }
+
+    #[inline]
+    async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>{
+        self.inner_call(async move |inner|{
+            Ok(inner.get_mut().get())
+        }).await
+    }
+
+    #[inline]
+    async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>{
+        self.inner_call(async move |inner| {
+            Ok(inner.get_mut().get_count())
+        }).await
+    }
+}
+
+#[tokio::main]
+async fn main()->Result<(),Box<dyn Error+ Send + Sync>> {
+    {
+        // Single thread test
+        let tf = Arc::new(Actor::new(Foo::default()));
+        tf.add(100).await?;
+        assert_eq!(100, tf.get().await?);
+        tf.add(-100).await.unwrap();
+        assert_eq!(0, tf.get().await?);
+        tf.reset().await?;
+
+        let start = Instant::now();
+        for i in 0..2000000 {
+            if let Err(er) = tf.add(i).await {
+                println!("{}", er);
+            };
+        }
+
+        println!("test a count:{} value:{} time:{} qps:{}",
+                 tf.get_count().await?,
+                 tf.get().await?,
+                 start.elapsed().as_secs_f32(),
+                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
+    }
+
+    {
+        //Multithreading test
+        let tf = Arc::new(Actor::new(Foo::default()));
+        let start = Instant::now();
+        let a_tf = tf.clone();
+        let a = tokio::spawn(async move {
+            for i in 0..1000000 {
+                if let Err(er) = a_tf.add(i).await {
+                    println!("{}", er);
+                };
+            }
+        });
+
+        let b_tf = tf.clone();
+        let b = tokio::spawn(async move {
+            for i in 1000000..2000000 {
+                if let Err(er) = b_tf.add(i).await {
+                    println!("{}", er);
+                };
+            }
+        });
+
+        let c_tf = tf.clone();
+        let c = tokio::spawn(async move {
+            for i in 2000000..3000000 {
+                if let Err(er) = c_tf.add(i).await {
+                    println!("{}", er);
+                };
+            }
+        });
+
+        c.await?;
+        a.await?;
+        b.await?;
+
+        println!("test b count:{} value:{} time:{} qps:{}",
+                 tf.get_count().await?,
+                 tf.get().await?,
+                 start.elapsed().as_secs_f32(),
+                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
+    }
+
+    Ok(())
+}
+```
