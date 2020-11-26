@@ -6,7 +6,7 @@ use aqueue::AQueue;
 static mut VALUE:i32=0;
 
 #[tokio::main]
-async fn main()->Result<(),Box<dyn Error+Sync+Send>> {
+async fn main()->AResult<()> {
     let queue = AQueue::new();
     let mut v=0i32;
     for i in 0..2000000 {
@@ -26,7 +26,7 @@ async fn main()->Result<(),Box<dyn Error+Sync+Send>> {
 # Examples Actor Struct
 ```rust
 #![feature(async_closure)]
-use aqueue::AQueue;
+use aqueue::{AResult,AQueue};
 use std::sync::Arc;
 use std::cell::{RefCell};
 use std::error::Error;
@@ -74,19 +74,19 @@ impl FooRunner {
             queue:AQueue::new()
         }
     }
-    pub async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>{
+    pub async fn add(&self,x:i32)->AResult<i128>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow_mut().add(x))
         },self.inner.clone()).await
     }
 
-    pub async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>{
+    pub async fn get(&self)->AResult<i128>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow().get())
         },self.inner.clone()).await
     }
 
-    pub async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>{
+    pub async fn get_count(&self)->AResult<u64>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow().get_count())
         },self.inner.clone()).await
