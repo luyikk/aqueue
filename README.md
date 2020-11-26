@@ -165,7 +165,7 @@ async fn main() {
 # Examples Actor Trait
 ```rust
 #![feature(async_closure)]
-use aqueue::Actor;
+use aqueue::{Actor,AResult};
 use std::sync::Arc;
 use std::error::Error;
 use std::time::Instant;

@@ -1,15 +1,15 @@
 mod fn_one;
 use aqueue_trait::async_trait;
-use std::error::Error;
 use std::sync::atomic::{AtomicU8, Ordering};
 use async_oneshot::{ Receiver};
 use std::future::Future;
 use concurrent_queue::ConcurrentQueue;
 pub use fn_one::AQueueItem;
+use crate::AResult;
 
 #[async_trait]
 pub trait QueueItem{
-    async fn run(&self)->Result<(), Box<dyn Error+Send+Sync>>;
+    async fn run(&self)->AResult<()>;
 }
 
 const IDLE:u8=0;
@@ -32,15 +32,15 @@ impl AQueue{
     }
 
     #[inline]
-    pub async fn run<A,T,S>(&self, call:impl FnOnce(A)->T+ Send+Sync+'static, arg:A) ->Result<S, Box<dyn Error+Send+Sync>>
-    where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
+    pub async fn run<A,T,S>(&self, call:impl FnOnce(A)->T+ Send+Sync+'static, arg:A) ->AResult<S>
+    where T:Future<Output = AResult<S>> + Send+ Sync+'static,
           S:'static, A: Send+Sync+'static {
         self.push(AQueueItem::new(call,arg)).await
     }
 
     #[inline]
-    pub async fn push<T>(&self,(rx,item):(Receiver<Result<T, Box<dyn Error+Send+Sync>>>,Box<dyn QueueItem+Send+Sync>))
-        ->Result<T, Box<dyn Error+Send+Sync>>{
+    pub async fn push<T>(&self,(rx,item):(Receiver<AResult<T>>,Box<dyn QueueItem+Send+Sync>))
+        ->AResult<T>{
         if let Err(er)= self.deque.push(item){
             return Err(er.to_string().into())
         }
@@ -53,7 +53,7 @@ impl AQueue{
 
 
     #[inline]
-    pub async fn run_ing(&self)->Result<(), Box<dyn Error+Send+Sync>>{
+    pub async fn run_ing(&self)->AResult<()>{
         if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
             'recv:loop {
                 let item = {

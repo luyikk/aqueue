@@ -1,7 +1,6 @@
 #![feature(async_closure)]
 
-use aqueue::AQueue;
-use std::error::Error;
+use aqueue::{AQueue, AResult};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{delay_for, Duration};
@@ -9,7 +8,7 @@ use tokio::time::{delay_for, Duration};
 static mut VALUE: i32 = 0;
 
 #[tokio::test]
-async fn test() -> Result<(), Box<dyn Error + Sync + Send>> {
+async fn test() -> AResult<()> {
     let queue = Arc::new(AQueue::new());
 
     let a_queue = queue.clone();
@@ -68,7 +67,7 @@ async fn test() -> Result<(), Box<dyn Error + Sync + Send>> {
 }
 
 #[tokio::test]
-async fn test_string()-> Result<(), Box<dyn Error + Sync + Send>>{
+async fn test_string()-> AResult<()>{
 
 
    let queue = Arc::new(AQueue::new());
@@ -208,7 +207,7 @@ async fn test_struct() {
 
 
 #[tokio::test]
-async fn test_actor()->Result<(),Box<dyn Error+ Send + Sync>>{
+async fn test_actor()->AResult<()>{
 
     #[derive(Default)]
     struct Foo{
@@ -234,19 +233,19 @@ async fn test_actor()->Result<(),Box<dyn Error+ Send + Sync>>{
 
     #[aqueue_trait]
     pub trait FooRunner{
-        async fn set(&self,x:i32,y:i32)-> Result<i32,Box<dyn Error+Sync+Send>>;
-        async fn get(&self)->Result<(i32,i32,i32),Box<dyn Error+Sync+Send>>;
+        async fn set(&self,x:i32,y:i32)-> AResult<i32>;
+        async fn get(&self)->AResult<(i32,i32,i32)>;
     }
 
     #[aqueue_trait]
     impl FooRunner for Actor<Foo>{
-        async fn set(&self, x: i32, y: i32) -> Result<i32, Box<dyn Error + Sync + Send>> {
+        async fn set(&self, x: i32, y: i32) -> AResult<i32> {
             self.inner_call(async move|inner|  {
                 Ok(inner.get_mut().set(x,y).await)
             }).await
         }
 
-        async fn get(&self) -> Result<(i32, i32, i32), Box<dyn Error + Sync + Send>> {
+        async fn get(&self) -> AResult<(i32, i32, i32)> {
             self.inner_call(async move|inner|  {
                 Ok(inner.get().get())
             }).await
@@ -257,7 +256,7 @@ async fn test_actor()->Result<(),Box<dyn Error+ Send + Sync>>{
 
     let a_foo=Arc::new(Actor::new(Foo::default()));
     let b_foo=a_foo.clone();
-    let b:JoinHandle<Result<(),Box<dyn Error+Send+Sync>>>=tokio::spawn(async move{
+    let b:JoinHandle<AResult<()>>=tokio::spawn(async move{
         for i in 0..100 {
             let x= b_foo.set(i-1,i+1).await?;
             println!("i:{}",x);

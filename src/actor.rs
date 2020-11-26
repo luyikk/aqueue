@@ -1,7 +1,6 @@
 use std::cell::UnsafeCell;
-use crate::AQueue;
+use crate::{AQueue, AResult};
 use std::future::Future;
-use std::error::Error;
 use std::sync::Arc;
 
 
@@ -42,7 +41,7 @@ pub struct Actor<I>{
 impl<I:'static> Actor<I>{
 
     #[inline]
-    pub fn new(x:I)->Actor<I>{
+    pub  fn new(x:I)->Actor<I>{
         Actor{
             inner:Arc::new(InnerStore::new(x)),
             queue:AQueue::new()
@@ -50,8 +49,8 @@ impl<I:'static> Actor<I>{
     }
 
     #[inline]
-    pub async fn inner_call<T,S>(&self, call:impl FnOnce(Arc<InnerStore<I>>)->T+ Send+Sync+'static) ->Result<S, Box<dyn Error+Send+Sync>>
-        where T:Future<Output = Result<S, Box<dyn Error+Send+Sync>>> + Send+ Sync+'static,
+    pub async fn inner_call<T,S>(&self, call:impl FnOnce(Arc<InnerStore<I>>)->T+ Send+Sync+'static) ->AResult<S>
+        where T:Future<Output = AResult<S>> + Send+ Sync+'static,
               S:'static {
         unsafe {
             self.queue.run(call, self.inner.clone()).await
