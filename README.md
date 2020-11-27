@@ -1,6 +1,6 @@
 # fast speed thread safe async execute queue
 
-## Examples lib
+## Examples crates
 ### [TcpClient](https://crates.io/crates/tcpclient)
 
 ## Examples Basic
