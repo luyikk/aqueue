@@ -8,7 +8,7 @@ use tokio::time::{delay_for, Duration};
 static mut VALUE: i32 = 0;
 
 #[tokio::test]
-async fn test() -> AResult<()> {
+async fn test() ->Result<(),Box<dyn Error>> {
     let queue = Arc::new(AQueue::new());
 
     let a_queue = queue.clone();
@@ -67,7 +67,7 @@ async fn test() -> AResult<()> {
 }
 
 #[tokio::test]
-async fn test_string()-> AResult<()>{
+async fn test_string()->Result<(),Box<dyn Error>>{
 
 
    let queue = Arc::new(AQueue::new());
@@ -103,10 +103,11 @@ use aqueue::aqueue_trait;
 use std::cell::Cell;
 use aqueue::actor::{Actor};
 use tokio::task::JoinHandle;
+use std::error::Error;
 
 
 #[tokio::test]
-async fn test_struct() {
+async fn test_struct()->Result<(),Box<dyn Error>> {
     #[aqueue_trait]
     pub trait IFoo {
         async fn run(&self, x: i32, y: i32) -> i32;
@@ -201,13 +202,14 @@ async fn test_struct() {
 
     });
 
-    a.await.unwrap();
-    b.await.unwrap();
+    a.await?;
+    b.await?;
+    Ok(())
 }
 
 
 #[tokio::test]
-async fn test_actor()->AResult<()>{
+async fn test_actor()->Result<(),Box<dyn Error>>{
 
     #[derive(Default)]
     struct Foo{

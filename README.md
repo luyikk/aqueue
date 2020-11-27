@@ -6,7 +6,7 @@ use aqueue::AQueue;
 static mut VALUE:i32=0;
 
 #[tokio::main]
-async fn main()->AResult<()> {
+async fn main()->Result<(),Box<dyn Error>> {
     let queue = AQueue::new();
     let mut v=0i32;
     for i in 0..2000000 {
@@ -95,14 +95,14 @@ impl FooRunner {
 
 
 #[tokio::main]
-async fn main() {
+async fn main()->Result<(),Box<dyn Error>> {
     {
         // Single thread test
         let tf = Arc::new(FooRunner::new());
-        tf.add(100).await.unwrap();
-        assert_eq!(100, tf.get().await.unwrap());
+        tf.add(100).await?;
+        assert_eq!(100, tf.get().await?);
         tf.add(-100).await.unwrap();
-        assert_eq!(0, tf.get().await.unwrap());
+        assert_eq!(0, tf.get().await?);
 
         let start = Instant::now();
         for i in 0..2000000 {
@@ -112,10 +112,10 @@ async fn main() {
         }
 
         println!("test a count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await.unwrap(),
-                 tf.get().await.unwrap(),
+                 tf.get_count().await?,
+                 tf.get().await?,
                  start.elapsed().as_secs_f32(),
-                 tf.get_count().await.unwrap() / start.elapsed().as_millis() as u64 * 1000);
+                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
     }
 
     {
@@ -149,16 +149,18 @@ async fn main() {
             }
         });
 
-        c.await.unwrap();
-        a.await.unwrap();
-        b.await.unwrap();
+        c.await?;
+        a.await?;
+        b.await?;
 
         println!("test b count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await.unwrap(),
-                 tf.get().await.unwrap(),
+                 tf.get_count().await?,
+                 tf.get().await?,
                  start.elapsed().as_secs_f32(),
-                 tf.get_count().await.unwrap() / start.elapsed().as_millis() as u64 * 1000);
+                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);       
     }
+
+    Ok(())
 }
 ```
 
@@ -228,7 +230,7 @@ impl FooRunner for Actor<Foo> {
 }
 
 #[tokio::main]
-async fn main()->Result<(),Box<dyn Error+ Send + Sync>> {
+async fn main()->Result<(),Box<dyn Error>> {
     {
         // Single thread test
         let tf = Arc::new(Actor::new(Foo::default()));
