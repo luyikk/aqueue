@@ -70,11 +70,11 @@ impl<I:'static> Actor<I>{
     }
 
     #[inline]
-    pub fn deref_inner(&self)->RefInner<I>{
+    pub unsafe fn deref_inner(&self)->RefInner<'_,I>{
         RefInner{
             value:self.inner.get()
         }
     }
-
 }
+
 
