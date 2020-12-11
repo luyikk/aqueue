@@ -272,5 +272,6 @@ async fn test_actor()->Result<(),Box<dyn Error>>{
     }
     b.await??;
     assert_eq!((200,29700,30100),a_foo.get().await?);
+
     Ok(())
 }

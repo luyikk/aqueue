@@ -2,7 +2,7 @@ use std::cell::UnsafeCell;
 use crate::{AQueue, AResult};
 use std::future::Future;
 use std::sync::Arc;
-
+use std::ops::Deref;
 
 
 // Please do not use it at will
@@ -37,6 +37,18 @@ pub struct Actor<I>{
     queue:AQueue
 }
 
+pub struct RefInner<'a,T:?Sized>{
+    value:&'a T
+}
+
+impl<T: ?Sized> Deref for RefInner<'_,T>{
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.value
+    }
+}
+
 
 impl<I:'static> Actor<I>{
 
@@ -56,6 +68,13 @@ impl<I:'static> Actor<I>{
             self.queue.run(call, self.inner.clone()).await
         }
     }
-}
 
+    #[inline]
+    pub fn deref_inner(&self)->RefInner<I>{
+        RefInner{
+            value:self.inner.get()
+        }
+    }
+
+}
 
