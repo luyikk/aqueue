@@ -1,6 +1,6 @@
 [package]
 name = "aqueue"
-version = "0.1.21"
+version = "0.2.0"
 authors = ["luyi <luyikk@126.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -12,7 +12,7 @@ description = "fast speed thread safe async execute queue."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 aqueue_trait = {path="async-trait",version="0.1.0"}
 concurrent-queue = "1.2.2"
 async-oneshot = "0.4.2"

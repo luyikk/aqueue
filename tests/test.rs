@@ -3,7 +3,7 @@
 use aqueue::{AQueue, AResult};
 use std::sync::Arc;
 use std::time::Instant;
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 static mut VALUE: i32 = 0;
 
@@ -17,7 +17,7 @@ async fn test() ->Result<(),Box<dyn Error>> {
             .run(
                 async move |_| {
                     println!("a");
-                    delay_for(Duration::from_secs(1)).await;
+                    //delay_for(Duration::from_secs(1)).await;
                     Ok(1)
                 },
                 (),
@@ -43,7 +43,7 @@ async fn test() ->Result<(),Box<dyn Error>> {
         }
     });
 
-    delay_for(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(2)).await;
 
     let start = Instant::now();
     let mut v = 0i32;
@@ -226,7 +226,7 @@ async fn test_actor()->Result<(),Box<dyn Error>>{
         pub async fn set(&mut self,x:i32,y:i32)->i32{
             self.x+=x;
             self.y+=y;
-            delay_for(Duration::from_millis(1)).await;
+            sleep(Duration::from_millis(1)).await;
             println!("{} {}",self.x,self.y);
             self.i+=1;
             self.i
