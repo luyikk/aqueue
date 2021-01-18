@@ -54,7 +54,7 @@ impl AQueue{
 
     #[inline]
     pub async fn run_ing(&self)->AResult<()>{
-        if  self.status.compare_and_swap(IDLE,OPEN,Ordering::Release)==IDLE {
+        if  self.status.compare_exchange(IDLE,OPEN,Ordering::SeqCst,Ordering::Acquire)==Ok(IDLE) {
             'recv:loop {
                 let item = {
                     match self.deque.pop() {
@@ -62,7 +62,7 @@ impl AQueue{
                             p
                         }
                         _ => {
-                            if self.status.compare_and_swap(OPEN, IDLE, Ordering::Release) == OPEN {
+                            if self.status.compare_exchange(OPEN, IDLE, Ordering::SeqCst,Ordering::Acquire) == Ok(OPEN) {
                                 break 'recv;
                             } else {
                                 panic!("error status")

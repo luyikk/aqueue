@@ -117,7 +117,7 @@ async fn test_struct()->Result<(),Box<dyn Error>> {
         count:Cell<i32>
     }
 
-    unsafe impl  Sync for Foo{};
+    unsafe impl  Sync for Foo{}
 
     #[aqueue_trait]
     impl IFoo for Foo {
