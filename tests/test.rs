@@ -69,21 +69,14 @@ async fn test() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_string() -> Result<(), Box<dyn Error>> {
     let queue = Arc::new(AQueue::new());
-
     let str = 12345.to_string();
-
     let len = queue.run(async move |x| Ok(x.len()), str).await?;
-
     assert_eq!(len, 5);
-
     struct Foo {
         i: i32,
     }
-
     let foo = Foo { i: 5 };
-
     let len = queue.run(async move |x| Ok(x.i), foo).await?;
-
     assert_eq!(len, 5);
 
     Ok(())
@@ -94,6 +87,7 @@ use aqueue::aqueue_trait;
 use std::cell::Cell;
 use std::error::Error;
 use tokio::task::JoinHandle;
+
 
 #[tokio::test]
 async fn test_struct() -> Result<(), Box<dyn Error>> {
@@ -148,12 +142,11 @@ async fn test_struct() -> Result<(), Box<dyn Error>> {
         }
     }
 
+
+
     let foo = Foo { count: Cell::new(0) };
-
     let make = Arc::new(MakeActorIFoo::from(foo));
-
     let x = make.run(1, 2).await;
-
     assert_eq!(x, 3);
 
     let start = Instant::now();
