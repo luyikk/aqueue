@@ -5,11 +5,8 @@ use std::iter::FromIterator;
 use std::mem;
 use syn::punctuated::Punctuated;
 use syn::visit_mut::{self, VisitMut};
-use syn::{
-    parse_quote, Block, Error, ExprPath, ExprStruct, Ident, Item, Macro, PatPath, PatStruct,
-    PatTupleStruct, Path, PathArguments, QSelf, Receiver, Signature, Token, Type, TypePath,
-    WherePredicate,
-};
+use syn::{parse_quote, Block, Error, ExprPath, ExprStruct, Ident, Item, Macro, PatPath, PatStruct, PatTupleStruct, Path, PathArguments, QSelf,
+          Receiver, Signature, Token, Type, TypePath, WherePredicate};
 
 pub fn has_self_in_sig(sig: &mut Signature) -> bool {
     let mut visitor = HasSelf(false);
@@ -77,10 +74,7 @@ pub struct ReplaceReceiver {
 
 impl ReplaceReceiver {
     pub fn with(ty: Type) -> Self {
-        ReplaceReceiver {
-            with: ty,
-            as_trait: None,
-        }
+        ReplaceReceiver { with: ty, as_trait: None }
     }
 
     pub fn with_as_trait(ty: Type, as_trait: Path) -> Self {
@@ -191,9 +185,7 @@ impl ReplaceReceiver {
                         } else {
                             let self_ty = self.self_ty(ident.span());
                             match iter.peek() {
-                                Some(TokenTree::Punct(p))
-                                    if p.as_char() == ':' && p.spacing() == Spacing::Joint =>
-                                {
+                                Some(TokenTree::Punct(p)) if p.as_char() == ':' && p.spacing() == Spacing::Joint => {
                                     let next = iter.next().unwrap();
                                     match iter.peek() {
                                         Some(TokenTree::Punct(p)) if p.as_char() == ':' => {
@@ -284,9 +276,7 @@ impl VisitMut for ReplaceReceiver {
     fn visit_item_mut(&mut self, i: &mut Item) {
         match i {
             // Visit `macro_rules!` because locally defined macros can refer to `self`.
-            Item::Macro(i) if i.mac.path.is_ident("macro_rules") => {
-                self.visit_macro_mut(&mut i.mac)
-            }
+            Item::Macro(i) if i.mac.path.is_ident("macro_rules") => self.visit_macro_mut(&mut i.mac),
             // Otherwise, do not recurse into nested items.
             _ => {}
         }

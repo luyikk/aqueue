@@ -8,7 +8,7 @@ use tokio::time::{sleep, Duration};
 static mut VALUE: i32 = 0;
 
 #[tokio::test]
-async fn test() ->Result<(),Box<dyn Error>> {
+async fn test() -> Result<(), Box<dyn Error>> {
     let queue = Arc::new(AQueue::new());
 
     let a_queue = queue.clone();
@@ -67,66 +67,55 @@ async fn test() ->Result<(),Box<dyn Error>> {
 }
 
 #[tokio::test]
-async fn test_string()->Result<(),Box<dyn Error>>{
+async fn test_string() -> Result<(), Box<dyn Error>> {
+    let queue = Arc::new(AQueue::new());
 
+    let str = 12345.to_string();
 
-   let queue = Arc::new(AQueue::new());
+    let len = queue.run(async move |x| Ok(x.len()), str).await?;
 
-   let str=12345.to_string();
+    assert_eq!(len, 5);
 
-   let len= queue.run(async move|x|{
-        Ok(x.len())
-    },str).await?;
-
-    assert_eq!(len,5);
-
-
-    struct Foo{
-        i:i32
+    struct Foo {
+        i: i32,
     }
 
-    let foo=Foo{i:5};
+    let foo = Foo { i: 5 };
 
-    let len= queue.run(async move|x|{
-        Ok(x.i)
-    },foo).await?;
+    let len = queue.run(async move |x| Ok(x.i), foo).await?;
 
-    assert_eq!(len,5);
-
-
+    assert_eq!(len, 5);
 
     Ok(())
 }
 
-
+use aqueue::actor::Actor;
 use aqueue::aqueue_trait;
 use std::cell::Cell;
-use aqueue::actor::{Actor};
-use tokio::task::JoinHandle;
 use std::error::Error;
-
+use tokio::task::JoinHandle;
 
 #[tokio::test]
-async fn test_struct()->Result<(),Box<dyn Error>> {
+async fn test_struct() -> Result<(), Box<dyn Error>> {
     #[aqueue_trait]
     pub trait IFoo {
         async fn run(&self, x: i32, y: i32) -> i32;
-        fn get_count(&self)->i32;
+        fn get_count(&self) -> i32;
     }
-    pub struct Foo{
-        count:Cell<i32>
+    pub struct Foo {
+        count: Cell<i32>,
     }
 
-    unsafe impl  Sync for Foo{}
+    unsafe impl Sync for Foo {}
 
     #[aqueue_trait]
     impl IFoo for Foo {
         async fn run(&self, x: i32, y: i32) -> i32 {
-            self.count.set(self.count.get()+1);
+            self.count.set(self.count.get() + 1);
             x + y
         }
 
-        fn get_count(&self)->i32{
+        fn get_count(&self) -> i32 {
             self.count.get()
         }
     }
@@ -136,11 +125,11 @@ async fn test_struct()->Result<(),Box<dyn Error>> {
         queue: AQueue,
     }
 
-    impl MakeActorIFoo{
-        pub fn from(x:Foo)->MakeActorIFoo{
-            MakeActorIFoo{
-                inner:Arc::new(x),
-                queue:AQueue::new()
+    impl MakeActorIFoo {
+        pub fn from(x: Foo) -> MakeActorIFoo {
+            MakeActorIFoo {
+                inner: Arc::new(x),
+                queue: AQueue::new(),
             }
         }
     }
@@ -149,9 +138,7 @@ async fn test_struct()->Result<(),Box<dyn Error>> {
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.queue
-                .run(async move |inner|{
-                    Ok(inner.run(x, y).await)
-                }, self.inner.clone())
+                .run(async move |inner| Ok(inner.run(x, y).await), self.inner.clone())
                 .await
                 .unwrap()
         }
@@ -161,45 +148,39 @@ async fn test_struct()->Result<(),Box<dyn Error>> {
         }
     }
 
+    let foo = Foo { count: Cell::new(0) };
 
+    let make = Arc::new(MakeActorIFoo::from(foo));
 
-    let foo=Foo{
-       count:Cell::new(0)
-    };
+    let x = make.run(1, 2).await;
 
-    let make=Arc::new(MakeActorIFoo::from(foo));
-
-    let x= make.run(1,2).await;
-
-    assert_eq!(x,3);
+    assert_eq!(x, 3);
 
     let start = Instant::now();
     for i in 0..2000000 {
-        make.run(i,i).await;
+        make.run(i, i).await;
     }
 
-    println!("{} {}" , start.elapsed().as_secs_f32(),make.inner.get_count());
+    println!("{} {}", start.elapsed().as_secs_f32(), make.inner.get_count());
 
-    let a_make=make.clone();
-    let a= tokio::spawn(async move{
+    let a_make = make.clone();
+    let a = tokio::spawn(async move {
         let start = Instant::now();
         for i in 0..2000000 {
-            a_make.run(i,i).await;
+            a_make.run(i, i).await;
         }
 
-        println!("a {} {}" , start.elapsed().as_secs_f32(),a_make.inner.get_count());
-
+        println!("a {} {}", start.elapsed().as_secs_f32(), a_make.inner.get_count());
     });
 
-    let b_make=make.clone();
-    let b= tokio::spawn(async move{
+    let b_make = make.clone();
+    let b = tokio::spawn(async move {
         let start = Instant::now();
         for i in 0..2000000 {
-            b_make.run(i,i).await;
+            b_make.run(i, i).await;
         }
 
-        println!("b {} {}" , start.elapsed().as_secs_f32(),b_make.inner.get_count());
-
+        println!("b {} {}", start.elapsed().as_secs_f32(), b_make.inner.get_count());
     });
 
     a.await?;
@@ -207,71 +188,135 @@ async fn test_struct()->Result<(),Box<dyn Error>> {
     Ok(())
 }
 
-
 #[tokio::test]
-async fn test_actor()->Result<(),Box<dyn Error>>{
-
-    #[derive(Default)]
-    struct Foo{
-        i:i32,
-        x:i32,
-        y:i32
+async fn test_count() -> Result<(), Box<dyn Error>> {
+    struct Foo {
+        count: u64,
+        data: String,
     }
 
-    impl Foo{
-
-        pub fn get(&self)->(i32,i32,i32){
-            (self.i,self.x,self.y)
+    impl Foo {
+        pub fn add_one(&mut self) {
+            self.count += 1;
+            self.data.push_str(&self.count.to_string())
         }
-        pub async fn set(&mut self,x:i32,y:i32)->i32{
-            self.x+=x;
-            self.y+=y;
+
+        pub fn get_str(&self) -> String {
+            self.data.clone()
+        }
+    }
+
+    #[aqueue_trait]
+    trait IFoo {
+        async fn add_one(&self) -> AResult<()>;
+        async fn get_str(&self) -> AResult<String>;
+    }
+
+    #[aqueue_trait]
+    impl IFoo for Actor<Foo> {
+        async fn add_one(&self) -> AResult<()> {
+            self.inner_call(async move |inner| {
+                inner.get_mut().add_one();
+                Ok(())
+            })
+            .await
+        }
+
+        async fn get_str(&self) -> AResult<String> {
+            self.inner_call(async move |inner| Ok(inner.get_mut().get_str())).await
+        }
+    }
+
+    let obj = Arc::new(Actor::new(Foo {
+        count: 0,
+        data: "".to_string(),
+    }));
+
+    let mut vec = vec![];
+    for _ in 0..1000 {
+        let p_obj = obj.clone();
+        vec.push(tokio::spawn(async move {
+            for _ in 0..1000 {
+                p_obj.add_one().await.unwrap();
+            }
+        }));
+    }
+
+    for j in vec {
+        j.await?;
+    }
+
+    let mut check = Foo {
+        count: 0,
+        data: "".to_string(),
+    };
+
+    for _ in 0..1000000 {
+        check.add_one();
+    }
+
+    let str = obj.get_str().await?;
+    assert_eq!(str, check.get_str());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_actor() -> Result<(), Box<dyn Error>> {
+    #[derive(Default)]
+    struct Foo {
+        i: i32,
+        x: i32,
+        y: i32,
+    }
+
+    impl Foo {
+        pub fn get(&self) -> (i32, i32, i32) {
+            (self.i, self.x, self.y)
+        }
+        pub async fn set(&mut self, x: i32, y: i32) -> i32 {
+            self.x += x;
+            self.y += y;
             sleep(Duration::from_millis(1)).await;
-            println!("{} {}",self.x,self.y);
-            self.i+=1;
+            println!("{} {}", self.x, self.y);
+            self.i += 1;
             self.i
         }
     }
 
     #[aqueue_trait]
-    pub trait FooRunner{
-        async fn set(&self,x:i32,y:i32)-> AResult<i32>;
-        async fn get(&self)->AResult<(i32,i32,i32)>;
+    pub trait FooRunner {
+        async fn set(&self, x: i32, y: i32) -> AResult<i32>;
+        async fn get(&self) -> AResult<(i32, i32, i32)>;
     }
 
     #[aqueue_trait]
-    impl FooRunner for Actor<Foo>{
+    impl FooRunner for Actor<Foo> {
         async fn set(&self, x: i32, y: i32) -> AResult<i32> {
-            self.inner_call(async move|inner|  {
-                Ok(inner.get_mut().set(x,y).await)
-            }).await
+            self.inner_call(async move |inner| Ok(inner.get_mut().set(x, y).await)).await
         }
 
         async fn get(&self) -> AResult<(i32, i32, i32)> {
-            self.inner_call(async move|inner|  {
-                Ok(inner.get().get())
-            }).await
+            self.inner_call(async move |inner| Ok(inner.get().get())).await
         }
-
-
     }
 
-    let a_foo=Arc::new(Actor::new(Foo::default()));
-    let b_foo=a_foo.clone();
-    let b:JoinHandle<AResult<()>>=tokio::spawn(async move{
+    let a_foo = Arc::new(Actor::new(Foo::default()));
+    let b_foo = a_foo.clone();
+    let b: JoinHandle<AResult<()>> = tokio::spawn(async move {
         for i in 0..100 {
-            let x= b_foo.set(i-1,i+1).await?;
-            println!("i:{}",x);
+            let x = b_foo.set(i - 1, i + 1).await?;
+            println!("i:{}", x);
         }
         Ok(())
     });
 
     for i in 200..300 {
-        let x= a_foo.set(i-1,i+1).await?;
-        println!("i:{}",x);
+        let x = a_foo.set(i - 1, i + 1).await?;
+        println!("i:{}", x);
     }
     b.await??;
-    assert_eq!((200,29700,30100),a_foo.get().await?);
+    assert_eq!((200, 29700, 30100), a_foo.get().await?);
 
     Ok(())
 }

@@ -1,18 +1,13 @@
 use crate::lifetime::{has_async_lifetime, CollectLifetimes};
 use crate::parse::Item;
-use crate::receiver::{
-    has_self_in_block, has_self_in_sig, has_self_in_where_predicate, ReplaceReceiver,
-};
+use crate::receiver::{has_self_in_block, has_self_in_sig, has_self_in_where_predicate, ReplaceReceiver};
 use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use std::mem;
 use syn::punctuated::Punctuated;
 use syn::visit_mut::VisitMut;
-use syn::{
-    parse_quote, Block, FnArg, GenericParam, Generics, Ident, ImplItem, Lifetime, Pat, PatIdent,
-    Path, Receiver, ReturnType, Signature, Stmt, Token, TraitItem, Type, TypeParam, TypeParamBound,
-    WhereClause,
-};
+use syn::{parse_quote, Block, FnArg, GenericParam, Generics, Ident, ImplItem, Lifetime, Pat, PatIdent, Path, Receiver, ReturnType, Signature, Stmt,
+          Token, TraitItem, Type, TypeParam, TypeParamBound, WhereClause};
 
 impl ToTokens for Item {
     fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -123,13 +118,7 @@ pub fn expand(input: &mut Item, is_local: bool) {
 //         'life1: 'async_trait,
 //         T: 'async_trait,
 //         Self: Sync + 'async_trait;
-fn transform_sig(
-    context: Context,
-    sig: &mut Signature,
-    has_self: bool,
-    has_default: bool,
-    is_local: bool,
-) {
+fn transform_sig(context: Context, sig: &mut Signature, has_self: bool, has_default: bool, is_local: bool) {
     sig.fn_token.span = sig.asyncness.take().unwrap().span;
 
     let ret = match &sig.output {
@@ -145,40 +134,26 @@ fn transform_sig(
         }
     }
 
-    let where_clause = sig
-        .generics
-        .where_clause
-        .get_or_insert_with(|| WhereClause {
-            where_token: Default::default(),
-            predicates: Punctuated::new(),
-        });
-    for param in sig
-        .generics
-        .params
-        .iter()
-        .chain(context.lifetimes(&lifetimes.explicit))
-    {
+    let where_clause = sig.generics.where_clause.get_or_insert_with(|| WhereClause {
+        where_token: Default::default(),
+        predicates: Punctuated::new(),
+    });
+    for param in sig.generics.params.iter().chain(context.lifetimes(&lifetimes.explicit)) {
         match param {
             GenericParam::Type(param) => {
                 let param = &param.ident;
-                where_clause
-                    .predicates
-                    .push(parse_quote!(#param: 'async_trait));
+                where_clause.predicates.push(parse_quote!(#param: 'async_trait));
             }
             GenericParam::Lifetime(param) => {
                 let param = &param.lifetime;
-                where_clause
-                    .predicates
-                    .push(parse_quote!(#param: 'async_trait));
+                where_clause.predicates.push(parse_quote!(#param: 'async_trait));
             }
             GenericParam::Const(_) => {}
         }
     }
     for elided in lifetimes.elided {
         sig.generics.params.push(parse_quote!(#elided));
-        where_clause
-            .predicates
-            .push(parse_quote!(#elided: 'async_trait));
+        where_clause.predicates.push(parse_quote!(#elided: 'async_trait));
     }
     sig.generics.params.push(parse_quote!('async_trait));
     if has_self {
@@ -190,9 +165,7 @@ fn transform_sig(
             })) => parse_quote!(Sync),
             Some(FnArg::Typed(arg))
                 if match (arg.pat.as_ref(), arg.ty.as_ref()) {
-                    (Pat::Ident(pat), Type::Reference(ty)) => {
-                        pat.ident == "self" && ty.mutability.is_none()
-                    }
+                    (Pat::Ident(pat), Type::Reference(ty)) => pat.ident == "self" && ty.mutability.is_none(),
                     _ => false,
                 } =>
             {
@@ -213,9 +186,7 @@ fn transform_sig(
 
     for (i, arg) in sig.inputs.iter_mut().enumerate() {
         match arg {
-            FnArg::Receiver(Receiver {
-                reference: Some(_), ..
-            }) => {}
+            FnArg::Receiver(Receiver { reference: Some(_), .. }) => {}
             FnArg::Receiver(arg) => arg.mutability = None,
             FnArg::Typed(arg) => {
                 if let Pat::Ident(ident) = &mut *arg.pat {
@@ -232,7 +203,7 @@ fn transform_sig(
     let bounds = if is_local {
         quote!('async_trait)
     } else {
-        quote!(::core::marker::Send + ::core::marker::Sync+ 'async_trait)
+        quote!(::core::marker::Send + ::core::marker::Sync + 'async_trait)
     };
 
     sig.output = parse_quote! {
@@ -252,13 +223,7 @@ fn transform_sig(
 //         _self + x
 //     }
 //     Box::pin(async_trait_method::<T, Self>(self, x))
-fn transform_block(
-    context: Context,
-    sig: &mut Signature,
-    block: &mut Block,
-    has_self: bool,
-    is_local: bool,
-) {
+fn transform_block(context: Context, sig: &mut Signature, block: &mut Block, has_self: bool, is_local: bool) {
     if let Some(Stmt::Item(syn::Item::Verbatim(item))) = block.stmts.first() {
         if block.stmts.len() == 1 && item.to_string() == ";" {
             return;
@@ -298,13 +263,7 @@ fn transform_block(
             where_clause.predicates = where_clause
                 .predicates
                 .into_iter()
-                .filter_map(|mut pred| {
-                    if has_self_in_where_predicate(&mut pred) {
-                        None
-                    } else {
-                        Some(pred)
-                    }
-                })
+                .filter_map(|mut pred| if has_self_in_where_predicate(&mut pred) { None } else { Some(pred) })
                 .collect();
             outer_generics.where_clause = Some(where_clause);
         }
@@ -313,30 +272,18 @@ fn transform_block(
     let fn_generics = mem::replace(&mut standalone.generics, outer_generics);
     standalone.generics.params.extend(fn_generics.params);
     if let Some(where_clause) = fn_generics.where_clause {
-        standalone
-            .generics
-            .make_where_clause()
-            .predicates
-            .extend(where_clause.predicates);
+        standalone.generics.make_where_clause().predicates.extend(where_clause.predicates);
     }
 
     if has_async_lifetime(&mut standalone, block) {
         standalone.generics.params.push(parse_quote!('async_trait));
     }
 
-    let mut types = standalone
-        .generics
-        .type_params()
-        .map(|param| param.ident.clone())
-        .collect::<Vec<_>>();
+    let mut types = standalone.generics.type_params().map(|param| param.ident.clone()).collect::<Vec<_>>();
 
     let mut self_bound = None::<TypeParamBound>;
     match standalone.inputs.iter_mut().next() {
-        Some(
-            arg @ FnArg::Receiver(Receiver {
-                reference: Some(_), ..
-            }),
-        ) => {
+        Some(arg @ FnArg::Receiver(Receiver { reference: Some(_), .. })) => {
             let (lifetime, mutability, self_token) = match arg {
                 FnArg::Receiver(Receiver {
                     reference: Some((_, lifetime)),
@@ -375,11 +322,7 @@ fn transform_block(
         }
         Some(arg @ FnArg::Receiver(_)) => {
             let (self_token, mutability) = match arg {
-                FnArg::Receiver(Receiver {
-                    self_token,
-                    mutability,
-                    ..
-                }) => (self_token, mutability),
+                FnArg::Receiver(Receiver { self_token, mutability, .. }) => (self_token, mutability),
                 _ => unreachable!(),
             };
             let under_self = Ident::new("_self", self_token.span);
@@ -414,10 +357,7 @@ fn transform_block(
             if !is_local {
                 self_param.bounds.extend(self_bound);
             }
-            standalone
-                .generics
-                .params
-                .push(GenericParam::Type(self_param));
+            standalone.generics.params.push(GenericParam::Type(self_param));
             types.push(Ident::new("Self", Span::call_site()));
         }
     }
@@ -431,18 +371,13 @@ fn transform_block(
 
     let mut replace = match context {
         Context::Trait { .. } => ReplaceReceiver::with(parse_quote!(AsyncTrait)),
-        Context::Impl {
-            receiver, as_trait, ..
-        } => ReplaceReceiver::with_as_trait(receiver.clone(), as_trait.clone()),
+        Context::Impl { receiver, as_trait, .. } => ReplaceReceiver::with_as_trait(receiver.clone(), as_trait.clone()),
     };
     replace.visit_signature_mut(&mut standalone);
     replace.visit_block_mut(block);
 
     let mut generics = types;
-    let consts = standalone
-        .generics
-        .const_params()
-        .map(|param| param.ident.clone());
+    let consts = standalone.generics.const_params().map(|param| param.ident.clone());
     generics.extend(consts);
 
     let allow_non_snake_case = if sig.ident != sig.ident.to_string().to_lowercase() {
