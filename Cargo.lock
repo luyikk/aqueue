@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "aqueue"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "aqueue_trait",
  "async-oneshot",
