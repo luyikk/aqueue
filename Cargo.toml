@@ -1,6 +1,6 @@
 [package]
 name = "aqueue"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["luyi <luyikk@126.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -14,7 +14,7 @@ description = "fast speed thread safe async execute queue."
 [dependencies]
 aqueue_trait = {path="async-trait",version="0.1.0"}
 concurrent-queue = "1.2.2"
-async-oneshot = "0.4.2"
+async-oneshot = "0.5"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

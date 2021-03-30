@@ -22,12 +22,11 @@ where
 {
     #[inline]
     async fn run(&self) -> AResult<()> {
-        let call = self.call.replace(None);
-
-        if let Some(call) = call {
-            let arg = self.arg.replace(None).unwrap();
+        let call = self.call.take();
+        if let Some(call) =  call {
+            let arg = self.arg.take().expect("arg is null");
             let res = (call)(arg).await;
-            if let Some(x) = self.result_sender.replace(None) {
+            if let Some(mut x) = self.result_sender.take(){
                 if x.send(res).is_err() {
                     Err("close".into())
                 } else {
