@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
 
-static mut VALUE: i32 = 0;
+static mut VALUE: u64 = 0;
 
 #[tokio::test]
 async fn test() -> Result<(), Box<dyn Error>> {
@@ -46,7 +46,7 @@ async fn test() -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_secs(2)).await;
 
     let start = Instant::now();
-    let mut v = 0i32;
+    let mut v = 0u64;
     for i in 0..2000000 {
         v = queue
             .run(
@@ -61,7 +61,7 @@ async fn test() -> Result<(), Box<dyn Error>> {
 
     println!("{} {}", start.elapsed().as_secs_f32(), v);
 
-    assert_eq!(v, -1455759936);
+    assert_eq!(v,1999999000000 );
 
     Ok(())
 }
