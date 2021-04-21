@@ -1,5 +1,5 @@
 use super::QueueItem;
-use aqueue_trait::async_trait;
+use async_trait::async_trait;
 use async_oneshot::{oneshot, Receiver, Sender};
 use std::cell::RefCell;
 use std::future::Future;

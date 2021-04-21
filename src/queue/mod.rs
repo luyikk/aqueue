@@ -1,5 +1,5 @@
 mod item;
-use aqueue_trait::async_trait;
+use async_trait::async_trait;
 use async_oneshot::Receiver;
 use concurrent_queue::ConcurrentQueue;
 pub use item::AQueueItem;

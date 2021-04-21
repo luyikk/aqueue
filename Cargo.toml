@@ -12,7 +12,7 @@ description = "fast speed thread safe async execute queue."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aqueue_trait = {path="async-trait",version="0.1"}
+async-trait="0.1"
 concurrent-queue = "1.2"
 async-oneshot = "0.5"
 anyhow="1.0"
