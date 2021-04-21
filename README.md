@@ -174,7 +174,7 @@ use aqueue::{Actor,AResult};
 use std::sync::Arc;
 use std::error::Error;
 use std::time::Instant;
-
+use async_trait::async_trait;
 
 #[derive(Default)]
 struct Foo{
@@ -200,7 +200,7 @@ impl Foo{
     }
 }
 
-#[aqueue::aqueue_trait]
+#[async_trait]
 pub trait FooRunner{
     async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>;
     async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>;
@@ -208,7 +208,7 @@ pub trait FooRunner{
     async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>;
 }
 
-#[aqueue::aqueue_trait]
+#[async_trait]
 impl FooRunner for Actor<Foo> {  
     async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>{
         self.inner_call(async move |inner|{
