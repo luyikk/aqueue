@@ -12,9 +12,10 @@ description = "fast speed thread safe async execute queue."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aqueue_trait = {path="async-trait",version="0.1.0"}
-concurrent-queue = "1.2.2"
+aqueue_trait = {path="async-trait",version="0.1"}
+concurrent-queue = "1.2"
 async-oneshot = "0.5"
+anyhow="1.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

@@ -1,9 +1,10 @@
 #![feature(async_closure)]
 
-use aqueue::{AQueue, AResult};
+use aqueue::AQueue;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
+use anyhow::*;
 
 static mut VALUE: u64 = 0;
 
@@ -201,13 +202,13 @@ async fn test_count() -> Result<(), Box<dyn Error>> {
 
     #[aqueue_trait]
     trait IFoo {
-        async fn add_one(&self) -> AResult<()>;
-        async fn get_str(&self) -> AResult<String>;
+        async fn add_one(&self) -> Result<()>;
+        async fn get_str(&self) -> Result<String>;
     }
 
     #[aqueue_trait]
     impl IFoo for Actor<Foo> {
-        async fn add_one(&self) -> AResult<()> {
+        async fn add_one(&self) -> Result<()> {
             self.inner_call(async move |inner| {
                 inner.get_mut().add_one();
                 Ok(())
@@ -215,7 +216,7 @@ async fn test_count() -> Result<(), Box<dyn Error>> {
             .await
         }
 
-        async fn get_str(&self) -> AResult<String> {
+        async fn get_str(&self) -> Result<String> {
             self.inner_call(async move |inner| Ok(inner.get_mut().get_str())).await
         }
     }
@@ -279,24 +280,24 @@ async fn test_actor() -> Result<(), Box<dyn Error>> {
 
     #[aqueue_trait]
     pub trait FooRunner {
-        async fn set(&self, x: i32, y: i32) -> AResult<i32>;
-        async fn get(&self) -> AResult<(i32, i32, i32)>;
+        async fn set(&self, x: i32, y: i32) -> Result<i32>;
+        async fn get(&self) -> Result<(i32, i32, i32)>;
     }
 
     #[aqueue_trait]
     impl FooRunner for Actor<Foo> {
-        async fn set(&self, x: i32, y: i32) -> AResult<i32> {
+        async fn set(&self, x: i32, y: i32) -> Result<i32> {
             self.inner_call(async move |inner| Ok(inner.get_mut().set(x, y).await)).await
         }
 
-        async fn get(&self) -> AResult<(i32, i32, i32)> {
+        async fn get(&self) -> Result<(i32, i32, i32)> {
             self.inner_call(async move |inner| Ok(inner.get().get())).await
         }
     }
 
     let a_foo = Arc::new(Actor::new(Foo::default()));
     let b_foo = a_foo.clone();
-    let b: JoinHandle<AResult<()>> = tokio::spawn(async move {
+    let b: JoinHandle<Result<()>> = tokio::spawn(async move {
         for i in 0..100 {
             let x = b_foo.set(i - 1, i + 1).await?;
             println!("i:{}", x);

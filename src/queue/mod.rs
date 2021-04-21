@@ -1,5 +1,4 @@
 mod item;
-use crate::AResult;
 use aqueue_trait::async_trait;
 use async_oneshot::Receiver;
 use concurrent_queue::ConcurrentQueue;
@@ -7,10 +6,11 @@ pub use item::AQueueItem;
 use std::future::Future;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::hint::spin_loop;
+use anyhow::*;
 
 #[async_trait]
 pub trait QueueItem {
-    async fn run(&self) -> AResult<()>;
+    async fn run(&self) -> Result<()>;
 }
 
 const IDLE: u8 = 0;
@@ -35,19 +35,19 @@ impl AQueue {
     }
 
     #[inline]
-    pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T + Send + Sync + 'static, arg: A) -> AResult<S>
+    pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T + Send + Sync + 'static, arg: A) -> Result<S>
     where
-        T: Future<Output = AResult<S>> + Send + Sync + 'static,
+        T: Future<Output = Result<S>> + Send + Sync + 'static,
         S: 'static,
         A: Send + Sync + 'static, {
         self.push(AQueueItem::new(call, arg)).await
     }
 
     #[inline]
-    pub async fn push<T>(&self, (rx, item): (Receiver<AResult<T>>, Box<dyn QueueItem + Send + Sync>)) -> AResult<T> {
+    pub async fn push<T>(&self, (rx, item): (Receiver<Result<T>>, Box<dyn QueueItem + Send + Sync>)) -> Result<T> {
 
         if let Err(er) = self.deque.push(item) {
-            return Err(er.to_string().into());
+            bail!(er.to_string());
         }
 
         while self.lock.load(Ordering::Relaxed)==OPEN {
@@ -57,12 +57,14 @@ impl AQueue {
         self.run_ing().await?;
         match rx.await {
             Ok(x) => Ok(x?),
-            Err(_) => Err("CLOSE".into()),
+            Err(_) =>{
+                bail!("CLOSE")
+            }
         }
     }
 
     #[inline]
-    pub async fn run_ing(&self) -> AResult<()> {
+    pub async fn run_ing(&self) -> Result<()> {
         if self.state.compare_exchange(IDLE, OPEN, Ordering::Acquire, Ordering::Acquire) == Ok(IDLE) {
             'recv: loop {
                 let item = {
@@ -77,7 +79,6 @@ impl AQueue {
                 self.lock.store(IDLE,Ordering::Release);
                 item.run().await?;
             }
-
 
             self.state.store(IDLE, Ordering::Release);
             self.lock.store(IDLE,Ordering::Release);
