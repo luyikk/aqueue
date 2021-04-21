@@ -104,27 +104,20 @@ impl IDatabase for Actor<DataBases>{
 #[tokio::main]
 async fn main()->Result<()> {
     dotenv::dotenv().ok().ok_or_else(||anyhow!(".env file not found"))?;
-
     let db= DataBases::new(10)?;
-
     db.create_table().await?;
-
     let mut join_vec=Vec::with_capacity(100);
-
     for i in 0..100 {
         let inner_db = db.clone();
-
         let join:JoinHandle<Result<()>>= tokio::spawn(async move {
             for j in 0..100 {             
                 inner_db.insert_user(i.to_string(),j as f64).await?;
             }
             Ok(())
         });
-
         join_vec.push(join);
     }
-
-
+    
     for join in join_vec {
         join.await??;
     }
