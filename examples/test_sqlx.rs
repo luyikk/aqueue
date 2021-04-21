@@ -104,7 +104,7 @@ async fn main()->Result<()> {
         let inner_db = db.clone();
         let join:JoinHandle<Result<()>>= tokio::spawn(async move {
             let mut rand=urandom::new();
-            for _ in 0..100 {
+            for _ in 0..1000 {
                 let name=rand.range(0..100000000).to_string();
                 let gold:f64=rand.range(0.0..100000000.0);
                 inner_db.insert_user(name,gold).await?;
