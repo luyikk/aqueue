@@ -27,8 +27,8 @@ impl DataBases{
     }
 
     async fn test(&self)->Result<bool> {
-        let (r, ): (u32, ) = sqlx::query_as("select 1").fetch_one(&self.pool).await.unwrap();
-        Ok(1 == 1)
+        let (r, ): (i32, ) = sqlx::query_as("select 1").fetch_one(&self.pool).await?;
+        Ok(r == 1)
     }
 }
 
@@ -49,6 +49,8 @@ impl IDatabase for Actor<DataBases>{
 
 
 #[tokio::main]
-async fn main() {
-
+async fn main()->Result<()> {
+    let db= DataBases::new("mysql://root:a123123@192.168.1.51:3306/navgator_service?charset=utf8mb4",10)?;
+    assert_eq!(true, db.test().await?);
+    Ok(())
 }
