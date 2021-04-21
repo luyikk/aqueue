@@ -35,12 +35,18 @@ impl AQueue {
     }
 
     #[inline]
-    pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T + Send + Sync + 'static, arg: A) -> Result<S>
+    pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T , arg: A) -> Result<S>
     where
-        T: Future<Output = Result<S>> + Send + Sync + 'static,
+        T: Future<Output = Result<S>> + Send  + 'static,
         S: 'static,
         A: Send + Sync + 'static, {
-        self.push(AQueueItem::new(call, arg)).await
+
+        unsafe {
+            let xp = Box::new(call(arg)) as Box<dyn Future<Output=Result<S>> + Send>;
+            let mp = (&xp as *const Box<dyn Future<Output=Result<S>> + Send> as *const Box<dyn Future<Output=Result<S>> + Send + Sync + 'static>).read();
+            std::mem::forget(xp);
+            self.push(AQueueItem::new(mp.into())).await
+        }
     }
 
     #[inline]

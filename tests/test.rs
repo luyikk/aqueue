@@ -84,7 +84,7 @@ async fn test_string() -> Result<(), Box<dyn Error>> {
 }
 
 use aqueue::actor::Actor;
-use aqueue::aqueue_trait;
+use async_trait::async_trait;
 use std::cell::Cell;
 use std::error::Error;
 use tokio::task::JoinHandle;
@@ -92,7 +92,7 @@ use tokio::task::JoinHandle;
 
 #[tokio::test]
 async fn test_struct() -> Result<(), Box<dyn Error>> {
-    #[aqueue_trait]
+    #[async_trait]
     pub trait IFoo {
         async fn run(&self, x: i32, y: i32) -> i32;
         fn get_count(&self) -> i32;
@@ -103,7 +103,7 @@ async fn test_struct() -> Result<(), Box<dyn Error>> {
 
     unsafe impl Sync for Foo {}
 
-    #[aqueue_trait]
+    #[async_trait]
     impl IFoo for Foo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.count.set(self.count.get() + 1);
@@ -129,7 +129,7 @@ async fn test_struct() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    #[aqueue_trait]
+    #[async_trait]
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.queue
@@ -200,13 +200,13 @@ async fn test_count() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    #[aqueue_trait]
+    #[async_trait]
     trait IFoo {
         async fn add_one(&self) -> Result<()>;
         async fn get_str(&self) -> Result<String>;
     }
 
-    #[aqueue_trait]
+    #[async_trait]
     impl IFoo for Actor<Foo> {
         async fn add_one(&self) -> Result<()> {
             self.inner_call(async move |inner| {
@@ -278,13 +278,13 @@ async fn test_actor() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    #[aqueue_trait]
+    #[async_trait]
     pub trait FooRunner {
         async fn set(&self, x: i32, y: i32) -> Result<i32>;
         async fn get(&self) -> Result<(i32, i32, i32)>;
     }
 
-    #[aqueue_trait]
+    #[async_trait]
     impl FooRunner for Actor<Foo> {
         async fn set(&self, x: i32, y: i32) -> Result<i32> {
             self.inner_call(async move |inner| Ok(inner.get_mut().set(x, y).await)).await

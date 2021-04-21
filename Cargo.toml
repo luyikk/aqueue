@@ -19,3 +19,5 @@ anyhow="1.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+sqlx = { version="0.5", features = [ "mysql", "runtime-tokio-native-tls" ] }
+async-trait="0.1"
