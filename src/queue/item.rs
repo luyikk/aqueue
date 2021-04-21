@@ -22,21 +22,14 @@ where
 {
     #[inline]
     async fn run(&self) -> Result<()> {
-        let call = self.call.take();
-        if let Some(call) =  call {
-            let arg = self.arg.take().expect("arg is null");
-            let res = (call)(arg).await;
-            if let Some(mut x) = self.result_sender.take(){
-                if x.send(res).is_err() {
-                    bail!("CLOSE")
-                } else {
-                    Ok(())
-                }
-            } else {
-                bail!("not call one_shot is none")
-            }
+        let call = self.call.take().ok_or_else(|| anyhow!("not call fn is none"))?;
+        let arg = self.arg.take().ok_or_else(|| anyhow!("arg is none"))?;
+        let res = (call)(arg).await;
+        let mut sender = self.result_sender.take().ok_or_else(|| anyhow!("not call one_shot is none"))?;
+        if sender.send(res).is_err() {
+            bail!("CLOSE")
         } else {
-            bail!("not call fn is none")
+            Ok(())
         }
     }
 }
