@@ -1,48 +1,94 @@
 #![feature(async_closure)]
 
-use sqlx::MySqlPool;
+use sqlx::{SqlitePool};
 use std::sync::Arc;
 use aqueue::Actor;
-use sqlx::mysql::MySqlPoolOptions;
+use sqlx::sqlite::SqlitePoolOptions;
 use anyhow::*;
 use async_trait ::async_trait;
+use std::env;
+use tokio::task::JoinHandle;
+
+
+#[derive(sqlx::FromRow,Debug)]
+pub struct User { id: i64, name: String, gold:f64 }
 
 pub struct DataBases{
-    pool:MySqlPool
+    auto_id:u32,
+    pool:SqlitePool
 }
 
 unsafe impl Send for DataBases{}
 unsafe impl Sync for DataBases{}
 
 impl DataBases{
-    pub fn new(mysql_url:&str,mysql_max_connections:u32)->anyhow::Result<Arc<Actor<DataBases>>>{
-        let pool=MySqlPoolOptions::new()
-            .max_connections(mysql_max_connections)
-            .connect_lazy(mysql_url)?;
+    pub fn new(sqlite_max_connections:u32)->anyhow::Result<Arc<Actor<DataBases>>>{
+        let pool=SqlitePoolOptions::new()
+            .max_connections(sqlite_max_connections)
+            .connect_lazy(&env::var("DATABASE_URL")?)?;
 
         Ok(Arc::new(Actor::new(DataBases{
+            auto_id:0,
             pool
         })))
 
     }
 
-    async fn test(&self)->Result<bool> {
-        let (r, ): (i32, ) = sqlx::query_as("select 1").fetch_one(&self.pool).await?;
-        Ok(r == 1)
+    async fn create_table(&self)->Result<()> {
+        sqlx::query(include_str!("table.sql")).execute(&self.pool)
+             .await?;
+        Ok(())
+
     }
+
+    async fn insert_user(&mut self,name:&str,gold:f64)->Result<bool> {
+        self.auto_id+=1;
+        let row = sqlx::query(r#"
+            insert into `user`(`id`,`name`,`gold`)
+            values(?,?,?)
+         "#).bind(&self.auto_id)
+            .bind(name)
+            .bind(gold)
+            .execute(&self.pool)
+            .await?
+            .last_insert_rowid();
+
+        Ok(row == 1)
+    }
+
+    async fn select_all_users(&self)->Result<Vec<User>>{
+       Ok(sqlx::query_as::<_,User>("select * from `user`").fetch_all(&self.pool).await?)
+    }
+
+
 }
 
 #[async_trait]
 pub trait IDatabase{
-    async fn test(&self)->Result<bool>;
+    async fn create_table(&self)->Result<()>;
+    async fn insert_user(&self,user:String,gold:f64)->Result<bool>;
+    async fn select_all_users(&self)->Result<Vec<User>>;
 }
 
 #[async_trait]
 impl IDatabase for Actor<DataBases>{
-    async fn test(&self) ->Result<bool> {
+    async fn create_table(&self) ->Result<()> {
         self.inner_call(async move|inner|{
-             inner.get().test().await
+             inner.get().create_table().await
         }).await
+    }
+
+    async fn insert_user(&self, user: String, gold: f64) -> Result<bool> {
+        self.inner_call(async move|inner|{
+            inner.get_mut().insert_user(&user,gold).await
+        }).await
+
+    }
+
+    async fn select_all_users(&self) -> Result<Vec<User>> {
+        unsafe{
+            self.deref_inner().select_all_users().await
+        }
     }
 }
 
@@ -50,7 +96,38 @@ impl IDatabase for Actor<DataBases>{
 
 #[tokio::main]
 async fn main()->Result<()> {
-    let db= DataBases::new("mysql://root:a123123@192.168.1.51:3306/navgator_service?charset=utf8mb4",10)?;
-    assert_eq!(true, db.test().await?);
+    dotenv::dotenv().ok().ok_or_else(||anyhow!(".env file not found"))?;
+
+    let db= DataBases::new(10)?;
+
+    db.create_table().await?;
+
+    let mut join_vec=Vec::with_capacity(100);
+
+    for _ in 0..100 {
+        let inner_db = db.clone();
+
+        let join:JoinHandle<Result<()>>= tokio::spawn(async move {
+            let mut rand=urandom::new();
+            for _ in 0..100 {
+                let name=rand.range(0..100000000).to_string();
+                let gold:f64=rand.range(0.0..100000000.0);
+                inner_db.insert_user(name,gold).await?;
+            }
+            Ok(())
+        });
+
+        join_vec.push(join);
+    }
+
+
+    for join in join_vec {
+        join.await??;
+    }
+
+    for user in db.select_all_users().await? {
+        println!("{:?}",user);
+    }
+
     Ok(())
 }
