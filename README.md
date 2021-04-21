@@ -1,7 +1,5 @@
 # fast speed thread safe async execute queue
 
-## Examples crates
-### [TcpClient](https://crates.io/crates/tcpclient)
 
 ## Examples Basic
 ```rust
