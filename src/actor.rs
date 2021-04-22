@@ -55,7 +55,7 @@ impl<I: 'static> Actor<I> {
     pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
     where
         T: Future<Output = Result<S>> + Send  + 'static,
-        S: 'static, {
+        S: 'static+Sync+Send, {
         self.queue.run(call, self.inner.clone()).await
     }
 

@@ -16,7 +16,6 @@ use async_trait ::async_trait;
 use std::env;
 use tokio::task::JoinHandle;
 
-
 #[derive(sqlx::FromRow,Debug)]
 pub struct User { id: i64, name: String, gold:f64 }
 
@@ -24,28 +23,22 @@ pub struct DataBases{
     auto_id:u32,
     pool:SqlitePool
 }
-
 unsafe impl Send for DataBases{}
 unsafe impl Sync for DataBases{}
-
 impl DataBases{
     pub fn new(sqlite_max_connections:u32)->anyhow::Result<Arc<Actor<DataBases>>>{
         let pool=SqlitePoolOptions::new()
             .max_connections(sqlite_max_connections)
             .connect_lazy(&env::var("DATABASE_URL")?)?;
-
         Ok(Arc::new(Actor::new(DataBases{
             auto_id:0,
             pool
         })))
-
     }
-
     async fn create_table(&self)->Result<()> {
         sqlx::query(include_str!("table.sql")).execute(&self.pool)
              .await?;
         Ok(())
-
     }
 
     async fn insert_user(&mut self,name:&str,gold:f64)->Result<bool> {
@@ -59,15 +52,12 @@ impl DataBases{
             .execute(&self.pool)
             .await?
             .last_insert_rowid();
-
         Ok(row == 1)
     }
 
     async fn select_all_users(&self)->Result<Vec<User>>{
        Ok(sqlx::query_as::<_,User>("select * from `user`").fetch_all(&self.pool).await?)
     }
-
-
 }
 
 #[async_trait]
@@ -84,22 +74,18 @@ impl IDatabase for Actor<DataBases>{
              inner.get().create_table().await
         }).await
     }
-
     async fn insert_user(&self, user: String, gold: f64) -> Result<bool> {
         self.inner_call(async move|inner|{
             inner.get_mut().insert_user(&user,gold).await
         }).await
 
     }
-
     async fn select_all_users(&self) -> Result<Vec<User>> {
         unsafe{
             self.deref_inner().select_all_users().await
         }
     }
 }
-
-
 
 #[tokio::main]
 async fn main()->Result<()> {
@@ -116,19 +102,15 @@ async fn main()->Result<()> {
             Ok(())
         });
         join_vec.push(join);
-    }
-    
+    }    
     for join in join_vec {
         join.await??;
     }
-
     for user in db.select_all_users().await? {
         println!("{:?}",user);
     }
-
     Ok(())
 }
-
 ```
 
 ```shell
@@ -182,6 +164,7 @@ use std::sync::Arc;
 use std::cell::{RefCell};
 use std::error::Error;
 use std::time::Instant;
+use anyhow::*;
 
 struct Foo{
     count:u64,
@@ -225,19 +208,19 @@ impl FooRunner {
             queue:AQueue::new()
         }
     }
-    pub async fn add(&self,x:i32)->AResult<i128>{
+    pub async fn add(&self,x:i32)->Result<i128>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow_mut().add(x))
         },self.inner.clone()).await
     }
 
-    pub async fn get(&self)->AResult<i128>{
+    pub async fn get(&self)->Result<i128>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow().get())
         },self.inner.clone()).await
     }
 
-    pub async fn get_count(&self)->AResult<u64>{
+    pub async fn get_count(&self)->Result<u64>{
         self.queue.run(async move |inner| {
             Ok(inner.0.borrow().get_count())
         },self.inner.clone()).await
@@ -246,7 +229,7 @@ impl FooRunner {
 
 
 #[tokio::main]
-async fn main()->Result<(),Box<dyn Error>> {
+async fn main()->Result<()> {
     {
         // Single thread test
         let tf = Arc::new(FooRunner::new());
@@ -323,7 +306,7 @@ use std::sync::Arc;
 use std::error::Error;
 use std::time::Instant;
 use async_trait::async_trait;
-
+use anyhow::*;
 #[derive(Default)]
 struct Foo{
     count:u64,
@@ -350,30 +333,30 @@ impl Foo{
 
 #[async_trait]
 pub trait FooRunner{
-    async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>;
-    async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>;
-    async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>;
-    async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>;
+    async fn add(&self,x:i32)->Result<i128>;
+    async fn reset(&self)->Result<()>;
+    async fn get(&self)->Result<i128>;
+    async fn get_count(&self)->Result<u64>;
 }
 
 #[async_trait]
 impl FooRunner for Actor<Foo> {  
-    async fn add(&self,x:i32)->Result<i128,Box<dyn Error+ Send + Sync>>{
+    async fn add(&self,x:i32)->Result<i128>{
         self.inner_call(async move |inner|{
             Ok(inner.get_mut().add(x))
         }).await
     }  
-    async fn reset(&self)->Result<(),Box<dyn Error+ Send + Sync>>{
+    async fn reset(&self)->Result<()>{
         self.inner_call(async move |inner| {
             Ok(inner.get_mut().reset())
         }).await
     }  
-    async fn get(&self)->Result<i128,Box<dyn Error+ Send + Sync>>{
+    async fn get(&self)->Result<i128>{
         self.inner_call(async move |inner|{
             Ok(inner.get_mut().get())
         }).await
     }  
-    async fn get_count(&self)->Result<u64,Box<dyn Error+ Send + Sync>>{
+    async fn get_count(&self)->Result<u64>{
         self.inner_call(async move |inner| {
             Ok(inner.get_mut().get_count())
         }).await
@@ -381,7 +364,7 @@ impl FooRunner for Actor<Foo> {
 }
 
 #[tokio::main]
-async fn main()->Result<(),Box<dyn Error>> {
+async fn main()->Result<()> {
     {
         // Single thread test
         let tf = Arc::new(Actor::new(Foo::default()));

@@ -38,14 +38,9 @@ impl AQueue {
     pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T , arg: A) -> Result<S>
     where
         T: Future<Output = Result<S>> + Send  + 'static,
-        S: 'static,
+        S: 'static+Sync+Send,
         A: Send + Sync + 'static, {
-
-        unsafe {
-            let p_call:Box<dyn Future<Output=Result<S>> + Send + Sync>=
-                std::mem::transmute(Box::new(call(arg)) as Box<dyn Future<Output=Result<S>> + Send>);
-            self.push(AQueueItem::new(p_call.into())).await
-        }
+        self.push(AQueueItem::new(Box::pin(call(arg)))).await
     }
 
     #[inline]
