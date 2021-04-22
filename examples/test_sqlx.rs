@@ -44,7 +44,7 @@ impl DataBases{
             .bind(gold)
             .execute(&self.pool)
             .await?
-            .last_insert_rowid();
+            .rows_affected();
 
         Ok(row == 1)
     }
