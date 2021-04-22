@@ -42,9 +42,8 @@ impl AQueue {
         A: Send + Sync + 'static, {
 
         unsafe {
-            let call = Box::new(call(arg)) as Box<dyn Future<Output=Result<S>> + Send>;
-            let p_call = (&call as *const Box<dyn Future<Output=Result<S>> + Send> as *const Box<dyn Future<Output=Result<S>> + Send + Sync + 'static>).read();
-            std::mem::forget(call);
+            let p_call:Box<dyn Future<Output=Result<S>> + Send + Sync>=
+                std::mem::transmute(Box::new(call(arg)) as Box<dyn Future<Output=Result<S>> + Send>);
             self.push(AQueueItem::new(p_call.into())).await
         }
     }
