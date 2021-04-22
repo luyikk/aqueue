@@ -1,14 +1,11 @@
 #![feature(async_closure)]
-
 use sqlx::{SqlitePool};
-use std::sync::Arc;
 use aqueue::Actor;
 use sqlx::sqlite::SqlitePoolOptions;
 use anyhow::*;
 use async_trait ::async_trait;
 use std::env;
 use tokio::task::JoinHandle;
-
 
 #[derive(sqlx::FromRow,Debug)]
 pub struct User { id: i64, name: String, gold:f64 }
@@ -17,30 +14,26 @@ pub struct DataBases{
     auto_id:u32,
     pool:SqlitePool
 }
-
 unsafe impl Send for DataBases{}
 unsafe impl Sync for DataBases{}
-
 impl DataBases{
-    pub fn new(sqlite_max_connections:u32)->anyhow::Result<Arc<Actor<DataBases>>>{
+    pub fn new(sqlite_max_connections:u32)->anyhow::Result<Actor<DataBases>>{
         let pool=SqlitePoolOptions::new()
             .max_connections(sqlite_max_connections)
             .connect_lazy(&env::var("DATABASE_URL")?)?;
 
-        Ok(Arc::new(Actor::new(DataBases{
+        Ok(Actor::new(DataBases{
             auto_id:0,
             pool
-        })))
+        }))
 
     }
-
     async fn create_table(&self)->Result<()> {
         sqlx::query(include_str!("table.sql")).execute(&self.pool)
              .await?;
         Ok(())
 
     }
-
     async fn insert_user(&mut self,name:&str,gold:f64)->Result<bool> {
         self.auto_id+=1;
         let row = sqlx::query(r#"
@@ -55,12 +48,9 @@ impl DataBases{
 
         Ok(row == 1)
     }
-
     async fn select_all_users(&self)->Result<Vec<User>>{
        Ok(sqlx::query_as::<_,User>("select * from `user`").fetch_all(&self.pool).await?)
     }
-
-
 }
 
 #[async_trait]
@@ -92,34 +82,31 @@ impl IDatabase for Actor<DataBases>{
     }
 }
 
-
-
+lazy_static::lazy_static!{
+    static ref DB:Actor<DataBases>={
+        DataBases::new(50).expect("install db error")
+    };
+}
 #[tokio::main]
 async fn main()->Result<()> {
     dotenv::dotenv().ok().ok_or_else(||anyhow!(".env file not found"))?;
-    let db= DataBases::new(10)?;
-    db.create_table().await?;
+
+    DB.create_table().await?;
     let mut join_vec=Vec::with_capacity(100);
-    for _ in 0..100 {
-        let inner_db = db.clone();
+    for i in 0..100 {
         let join:JoinHandle<Result<()>>= tokio::spawn(async move {
-            let mut rand=urandom::new();
-            for _ in 0..1000 {
-                let name=rand.range(0..100000000).to_string();
-                let gold:f64=rand.range(0.0..100000000.0);
-                inner_db.insert_user(name,gold).await?;
+            for j in 0..1000 {
+                DB.insert_user(i.to_string(),j as f64).await?;
             }
             Ok(())
         });
 
         join_vec.push(join);
     }
-
     for join in join_vec {
         join.await??;
     }
-
-    for user in db.select_all_users().await? {
+    for user in DB.select_all_users().await? {
         println!("{:?}",user);
     }
 
