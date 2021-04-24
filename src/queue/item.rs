@@ -21,14 +21,8 @@ where
 {
     #[inline]
     async fn run(&self) -> Result<()> {
-
         let mut sender = self.result_sender.take().ok_or_else(|| anyhow!("not call one_shot is none"))?;
-        if sender.send( self.run().await).is_err() {
-            bail!("CLOSE")
-        } else {
-            Ok(())
-        }
-
+        sender.send( self.run().await).map_err(|_|anyhow!("rx is close"))
     }
 }
 
