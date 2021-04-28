@@ -32,7 +32,6 @@ impl DataBases{
         sqlx::query(include_str!("table.sql")).execute(&self.pool)
              .await?;
         Ok(())
-
     }
     async fn insert_user(&mut self,name:&str,gold:f64)->Result<bool> {
         self.auto_id+=1;
