@@ -45,45 +45,36 @@ impl AQueue {
 
     #[inline]
     pub async fn push<T>(&self, (rx, item): (Receiver<Result<T>>, Box<dyn QueueItem + Send + Sync>)) -> Result<T> {
+        self.deque.push(item)
+            .map_err(|err| anyhow!(err.to_string()))?;
 
-        if let Err(er) = self.deque.push(item) {
-            bail!(er.to_string());
-        }
-
-        while self.lock.load(Ordering::Relaxed)==OPEN {
+        while self.lock.load(Ordering::Relaxed) == OPEN {
             spin_loop();
         }
 
         self.run_ing().await?;
-        match rx.await {
-            Ok(x) => Ok(x?),
-            Err(_) =>{
-                bail!("CLOSE")
-            }
-        }
+        rx.await.map_err(|_| anyhow!("tx is close"))?
     }
 
     #[inline]
     pub async fn run_ing(&self) -> Result<()> {
         if self.state.compare_exchange(IDLE, OPEN, Ordering::Acquire, Ordering::Acquire) == Ok(IDLE) {
-            'recv: loop {
+            'recv:
+            loop {
                 let item = {
-                    self.lock.store(OPEN,Ordering::Release);
+                    self.lock.store(OPEN, Ordering::Release);
                     match self.deque.pop() {
                         Ok(p) => p,
-                        _ => {
-                            break 'recv;
-                        }
+                        _ => break 'recv
                     }
                 };
-                self.lock.store(IDLE,Ordering::Release);
+                self.lock.store(IDLE, Ordering::Release);
                 item.run().await?;
             }
 
             self.state.store(IDLE, Ordering::Release);
             self.lock.store(IDLE,Ordering::Release);
         }
-
         Ok(())
     }
 }
