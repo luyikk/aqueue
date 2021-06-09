@@ -22,9 +22,6 @@ pub struct AQueue {
     lock:AtomicU8
 }
 
-unsafe impl Send for AQueue {}
-unsafe impl Sync for AQueue {}
-
 impl AQueue {
     pub fn new() -> AQueue {
         AQueue {
