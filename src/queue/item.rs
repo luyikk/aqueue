@@ -6,10 +6,10 @@ use std::future::Future;
 use anyhow::*;
 use std::pin::Pin;
 
-pub type FutureBox<'a,S>=Pin<Box<dyn Future<Output = Result<S>> + Send+'a>>;
+pub type BoxFuture<'a,S>=Pin<Box<dyn Future<Output = Result<S>> + Send+'a>>;
 
 pub struct AQueueItem<'a,S> {
-    call: RefCell<Option<FutureBox<'a,S>>>,
+    call: RefCell<Option<BoxFuture<'a,S>>>,
     result_sender: RefCell<Option<Sender<Result<S>>>>,
 }
 
@@ -33,7 +33,7 @@ where
     S: 'static+Sync+Send
 {
     #[inline]
-    pub fn new(call:FutureBox<'a,S>) -> (Receiver<Result<S>>, Self) {
+    pub fn new(call: BoxFuture<'a,S>) -> (Receiver<Result<S>>, Self) {
         let (tx, rx) = oneshot();
         (
             rx,

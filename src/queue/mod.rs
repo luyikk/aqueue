@@ -68,7 +68,7 @@ impl AQueue {
             (rx,Box::new(item))
         };
 
-        let item:Box<dyn QueueItem + Send + Sync>=Box::from_raw(std::mem::transmute(Box::into_raw(item)));
+        let item=Box::from_raw(std::mem::transmute(Box::into_raw(item)));
         self.push(rx,item).await
     }
 
