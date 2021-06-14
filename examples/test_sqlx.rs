@@ -55,7 +55,7 @@ impl DataBases{
 #[async_trait]
 pub trait IDatabase{
     async fn create_table(&self)->Result<()>;
-    async fn insert_user(&self, user: &str,gold:f64)->Result<bool>;
+    async fn insert_user<'a>(&'a self, user: &'a str,gold:f64)->Result<bool>;
     async fn select_all_users(&self)->Result<Vec<User>>;
 }
 
@@ -67,7 +67,7 @@ impl IDatabase for Actor<DataBases>{
         }).await
     }
 
-    async fn insert_user(&self, user: &str, gold: f64) -> Result<bool> {
+    async fn insert_user<'a>(&'a self, user: &'a str, gold: f64) -> Result<bool> {
         unsafe {
             self.inner_call_ref(async move |inner| {
                 inner.get_mut().insert_user(&user, gold).await

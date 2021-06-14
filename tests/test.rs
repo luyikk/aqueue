@@ -283,7 +283,7 @@ async fn test_actor() -> Result<(), Box<dyn Error>> {
     pub trait FooRunner {
         async fn set(&self, x: i32, y: i32) -> Result<i32>;
         async fn get(&self) -> Result<(i32, i32, i32)>;
-        async fn get_len(&self,b:&[u8])->Result<usize>;
+        async fn get_len<'a>(&'a self,b:&'a [u8])->Result<usize>;
     }
 
     #[async_trait]
@@ -296,7 +296,7 @@ async fn test_actor() -> Result<(), Box<dyn Error>> {
             self.inner_call(async move |inner| Ok(inner.get().get())).await
         }
 
-        async fn get_len(&self,b:&[u8])->Result<usize>{
+        async fn get_len<'a>(&'a self,b:&'a [u8])->Result<usize>{
             unsafe {
                 self.inner_call_ref(async move |_| Ok(b.len())).await
             }
@@ -321,9 +321,10 @@ async fn test_actor() -> Result<(), Box<dyn Error>> {
     assert_eq!((200, 29700, 30100), a_foo.get().await?);
 
 
-    let buff=vec![1,2,3,4,5];
 
+    let buff=vec![1,2,3,4,5];
     let x={
+
         a_foo.get_len(&buff[..])
     };
 

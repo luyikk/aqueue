@@ -69,7 +69,7 @@ impl<I: 'static> Actor<I> {
     /// # Safety
     ///
     /// 捕获闭包的借用参数，可能会导致问题，请勿乱用
-    pub async unsafe fn inner_call_ref<'a,T,S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
+    pub async unsafe fn inner_call_ref<'a,T,S>(&'a self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
         where
             T: Future<Output = Result<S>> + Send  + 'a,
             S: 'static+Sync+Send, {
