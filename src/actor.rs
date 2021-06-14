@@ -16,6 +16,7 @@ impl<T> InnerStore<T> {
         InnerStore(UnsafeCell::new(x))
     }
     #[inline]
+    #[allow(clippy::mut_from_ref)]
     pub fn get_mut(&self) -> &mut T {
         unsafe { &mut *self.0.get() }
     }
@@ -59,8 +60,19 @@ impl<I: 'static> Actor<I> {
         self.queue.run(call, self.inner.clone()).await
     }
 
+    /// # Safety
     #[inline]
     pub unsafe fn deref_inner(&self) -> RefInner<'_, I> {
         RefInner { value: self.inner.get() }
+    }
+
+    /// # Safety
+    ///
+    /// 捕获闭包的借用参数，可能会导致问题，请勿乱用
+    pub async unsafe fn inner_call_ref<'a,T,S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
+        where
+            T: Future<Output = Result<S>> + Send  + 'a,
+            S: 'static+Sync+Send, {
+        self.queue.ref_run(call, self.inner.clone()).await
     }
 }

@@ -6,16 +6,18 @@ use std::future::Future;
 use anyhow::*;
 use std::pin::Pin;
 
-pub struct AQueueItem<S> {
-    call: RefCell<Option<Pin<Box<dyn Future<Output = Result<S>> + Send>>>>,
+pub type FutureBox<'a,S>=Pin<Box<dyn Future<Output = Result<S>> + Send+'a>>;
+
+pub struct AQueueItem<'a,S> {
+    call: RefCell<Option<FutureBox<'a,S>>>,
     result_sender: RefCell<Option<Sender<Result<S>>>>,
 }
 
-unsafe impl<S> Send for AQueueItem<S> {}
-unsafe impl<S> Sync for AQueueItem<S> {}
+unsafe impl<'a,S> Send for AQueueItem<'a,S> {}
+unsafe impl<'a,S> Sync for AQueueItem<'a,S> {}
 
 #[async_trait]
-impl<S> QueueItem for AQueueItem<S>
+impl<'a,S> QueueItem for AQueueItem<'a,S>
 where
     S: 'static+Sync+Send
 {
@@ -26,19 +28,19 @@ where
     }
 }
 
-impl<S> AQueueItem<S>
+impl<'a,S> AQueueItem<'a,S>
 where
     S: 'static+Sync+Send
 {
     #[inline]
-    pub fn new(call:Pin<Box<dyn Future<Output = Result<S>> + Send>>) -> (Receiver<Result<S>>, Box<dyn QueueItem + Send + Sync>) {
+    pub fn new(call:FutureBox<'a,S>) -> (Receiver<Result<S>>, Self) {
         let (tx, rx) = oneshot();
         (
             rx,
-            Box::new(AQueueItem {
+            AQueueItem {
                 call: RefCell::new(Some(call)),
                 result_sender:RefCell::new( Some(tx))
-            }),
+            },
         )
     }
 

@@ -48,14 +48,14 @@ impl DataBases{
         Ok(row == 1)
     }
     async fn select_all_users(&self)->Result<Vec<User>>{
-       Ok(sqlx::query_as::<_,User>("select * from `user`").fetch_all(&self.pool).await?)
+       Ok(sqlx::query_as::<_,User>("select * from `user` order by name").fetch_all(&self.pool).await?)
     }
 }
 
 #[async_trait]
 pub trait IDatabase{
     async fn create_table(&self)->Result<()>;
-    async fn insert_user(&self,user:String,gold:f64)->Result<bool>;
+    async fn insert_user(&self, user: &str,gold:f64)->Result<bool>;
     async fn select_all_users(&self)->Result<Vec<User>>;
 }
 
@@ -67,11 +67,12 @@ impl IDatabase for Actor<DataBases>{
         }).await
     }
 
-    async fn insert_user(&self, user: String, gold: f64) -> Result<bool> {
-        self.inner_call(async move|inner|{
-            inner.get_mut().insert_user(&user,gold).await
-        }).await
-
+    async fn insert_user(&self, user: &str, gold: f64) -> Result<bool> {
+        unsafe {
+            self.inner_call_ref(async move |inner| {
+                inner.get_mut().insert_user(&user, gold).await
+            }).await
+        }
     }
 
     async fn select_all_users(&self) -> Result<Vec<User>> {
@@ -94,8 +95,8 @@ async fn main()->Result<()> {
     let mut join_vec=Vec::with_capacity(100);
     for i in 0..100 {
         let join:JoinHandle<Result<()>>= tokio::spawn(async move {
-            for j in 0..1000 {
-                DB.insert_user(i.to_string(),j as f64).await?;
+            for j in 0..10 {
+                DB.insert_user(&i.to_string(),j as f64).await?;
             }
             Ok(())
         });

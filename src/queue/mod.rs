@@ -16,19 +16,29 @@ pub trait QueueItem {
 const IDLE: u8 = 0;
 const OPEN: u8 = 1;
 
+
 pub struct AQueue {
     deque: ConcurrentQueue<Box<dyn QueueItem + Send + Sync>>,
     state: AtomicU8,
     lock:AtomicU8
 }
 
-impl AQueue {
-    pub fn new() -> AQueue {
+unsafe impl Send for AQueue {}
+unsafe impl Sync for AQueue {}
+
+impl Default for AQueue{
+    fn default() -> Self {
         AQueue {
             deque: ConcurrentQueue::unbounded(),
             state: AtomicU8::new(IDLE),
             lock:AtomicU8::new(IDLE)
         }
+    }
+}
+
+impl AQueue {
+    pub fn new() -> AQueue {
+        AQueue::default()
     }
 
     #[inline]
@@ -37,11 +47,33 @@ impl AQueue {
         T: Future<Output = Result<S>> + Send  + 'static,
         S: 'static+Sync+Send,
         A: Send + Sync + 'static, {
-        self.push(AQueueItem::new(Box::pin(call(arg)))).await
+
+        //
+        let (rx,item)=AQueueItem::new(Box::pin(call(arg)));
+        self.push(rx,Box::new(item)).await
+    }
+
+    /// # Safety
+    ///
+    /// 捕获闭包的借用参数，可能会导致问题，请勿乱用
+    #[inline]
+    pub async unsafe fn ref_run<'a,A, T, S>(&self, call: impl FnOnce(A) -> T , arg: A) -> Result<S>
+        where
+            T: Future<Output = Result<S>> + Send  + 'a,
+            S: 'static+Sync+Send,
+            A: Send + Sync + 'static, {
+
+        let (rx,item):(Receiver<Result<S>>,Box<dyn QueueItem + Send + Sync+'a>)={
+            let (rx,item)=AQueueItem::new(Box::pin(call(arg)));
+            (rx,Box::new(item))
+        };
+
+        let item:Box<dyn QueueItem + Send + Sync>=Box::from_raw(std::mem::transmute(Box::into_raw(item)));
+        self.push(rx,item).await
     }
 
     #[inline]
-    pub async fn push<T>(&self, (rx, item): (Receiver<Result<T>>, Box<dyn QueueItem + Send + Sync>)) -> Result<T> {
+    pub async fn push<T>(&self, rx:Receiver<Result<T>>, item: Box<dyn QueueItem + Send + Sync>) -> Result<T> {
         self.deque.push(item)
             .map_err(|err| anyhow!(err.to_string()))?;
 
