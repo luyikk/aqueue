@@ -2,7 +2,7 @@
 use sqlx::{SqlitePool};
 use aqueue::Actor;
 use sqlx::sqlite::SqlitePoolOptions;
-use anyhow::*;
+use anyhow::{anyhow, Context, Result};
 use async_trait ::async_trait;
 use std::env;
 use tokio::task::JoinHandle;
@@ -89,7 +89,7 @@ lazy_static::lazy_static!{
 }
 #[tokio::main]
 async fn main()->Result<()> {
-    dotenv::dotenv().ok().ok_or_else(||anyhow!(".env file not found"))?;
+    dotenv::dotenv().ok().context(".env file not found")?;
 
     DB.create_table().await?;
     let mut join_vec=Vec::with_capacity(100);

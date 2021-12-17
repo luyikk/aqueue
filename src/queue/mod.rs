@@ -6,7 +6,7 @@ pub use item::AQueueItem;
 use std::future::Future;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::hint::spin_loop;
-use anyhow::*;
+use anyhow::{Result,anyhow};
 
 #[async_trait]
 pub trait QueueItem {

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use async_oneshot::{oneshot, Receiver, Sender};
 use std::cell::RefCell;
 use std::future::Future;
-use anyhow::*;
+use anyhow::{anyhow, Result};
 use std::pin::Pin;
 
 pub type BoxFuture<'a,S>=Pin<Box<dyn Future<Output = Result<S>> + Send+'a>>;

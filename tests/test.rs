@@ -4,12 +4,13 @@ use aqueue::AQueue;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
-use anyhow::*;
+use anyhow::Result;
+
 
 static mut VALUE: u64 = 0;
 
 #[tokio::test]
-async fn test() -> Result<(), Box<dyn Error>> {
+async fn test() -> Result<()> {
     let queue = Arc::new(AQueue::new());
 
     let a_queue = queue.clone();
@@ -68,7 +69,7 @@ async fn test() -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test]
-async fn test_string() -> Result<(), Box<dyn Error>> {
+async fn test_string() -> Result<()> {
     let queue = Arc::new(AQueue::new());
     let str = 12345.to_string();
     let len = queue.run(async move |x| Ok(x.len()), str).await?;
@@ -86,13 +87,12 @@ async fn test_string() -> Result<(), Box<dyn Error>> {
 use aqueue::actor::Actor;
 use async_trait::async_trait;
 use std::cell::Cell;
-use std::error::Error;
 use tokio::task::JoinHandle;
 
 
 
 #[tokio::test]
-async fn test_struct() -> Result<(), Box<dyn Error>> {
+async fn test_struct() -> Result<()> {
     #[async_trait]
     pub trait IFoo {
         async fn run(&self, x: i32, y: i32) -> i32;
@@ -184,7 +184,7 @@ async fn test_struct() -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test]
-async fn test_count() -> Result<(), Box<dyn Error>> {
+async fn test_count() -> Result<()> {
     struct Foo {
         count: u64,
         data: String,
@@ -257,7 +257,7 @@ async fn test_count() -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::test]
-async fn test_actor() -> Result<(), Box<dyn Error>> {
+async fn test_actor() -> Result<()> {
     #[derive(Default)]
     struct Foo {
         i: i32,
