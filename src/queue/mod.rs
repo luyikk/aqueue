@@ -48,14 +48,13 @@ impl AQueue {
         S: 'static+Sync+Send,
         A: Send + Sync + 'static, {
 
-        //
         let (rx,item)=AQueueItem::new(Box::pin(call(arg)));
         self.push(rx,Box::new(item)).await
     }
 
     /// # Safety
     ///
-    /// 捕获闭包的借用参数，可能会导致问题，请勿乱用
+    /// 捕获闭包的借用参数，因为通过指针转换,可能会导致自引用问题，请注意
     #[inline]
     pub async unsafe fn ref_run<'a,A, T, S>(&'a self, call: impl FnOnce(A) -> T , arg: A) -> Result<S>
         where
