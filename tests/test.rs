@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use aqueue::AQueue;
 use std::sync::Arc;
 use std::time::Instant;
@@ -17,7 +15,7 @@ async fn test() -> Result<()> {
     tokio::spawn(async move {
         let x = a_queue
             .run(
-                async move |_| {
+                |_| async move  {
                     println!("a");
                     //delay_for(Duration::from_secs(1)).await;
                     Ok(1)
@@ -34,7 +32,7 @@ async fn test() -> Result<()> {
         for i in 0..100 {
             a_queue
                 .run(
-                    async move |_| {
+                    |_| async move  {
                         println!("b:{}", i);
                         Ok(())
                     },
@@ -52,9 +50,11 @@ async fn test() -> Result<()> {
     for i in 0..2000000 {
         v = queue
             .run(
-                async move |x| unsafe {
-                    VALUE += x;
-                    Ok(VALUE)
+                |x|  async move  {
+                    unsafe {
+                        VALUE += x;
+                        Ok(VALUE)
+                    }
                 },
                 i,
             )
@@ -72,13 +72,13 @@ async fn test() -> Result<()> {
 async fn test_string() -> Result<()> {
     let queue = Arc::new(AQueue::new());
     let str = 12345.to_string();
-    let len = queue.run(async move |x| Ok(x.len()), str).await?;
+    let len = queue.run(|x| async move  {Ok(x.len())}, str).await?;
     assert_eq!(len, 5);
     struct Foo {
         i: i32,
     }
     let foo = Foo { i: 5 };
-    let len = queue.run(async move |x| Ok(x.i), foo).await?;
+    let len = queue.run(|x| async move { Ok(x.i)}, foo).await?;
     assert_eq!(len, 5);
 
     Ok(())
@@ -134,7 +134,7 @@ async fn test_struct() -> Result<()> {
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.queue
-                .run(async move |inner| Ok(inner.run(x, y).await), self.inner.clone())
+                .run(|inner| async move {Ok(inner.run(x, y).await)}, self.inner.clone())
                 .await
                 .unwrap()
         }
@@ -210,15 +210,15 @@ async fn test_count() -> Result<()> {
     #[async_trait]
     impl IFoo for Actor<Foo> {
         async fn add_one(&self) -> Result<()> {
-            self.inner_call(async move |inner| {
+            self.inner_call( |inner|async move {
                 inner.get_mut().add_one();
                 Ok(())
             })
-            .await
+                .await
         }
 
         async fn get_str(&self) -> Result<String> {
-            self.inner_call(async move |inner| Ok(inner.get_mut().get_str())).await
+            self.inner_call(|inner|async move { Ok(inner.get_mut().get_str())}).await
         }
     }
 
@@ -289,16 +289,16 @@ async fn test_actor() -> Result<()> {
     #[async_trait]
     impl FooRunner for Actor<Foo> {
         async fn set(&self, x: i32, y: i32) -> Result<i32> {
-            self.inner_call(async move |inner| Ok(inner.get_mut().set(x, y).await)).await
+            self.inner_call(|inner| async move { Ok(inner.get_mut().set(x, y).await)}).await
         }
 
         async fn get(&self) -> Result<(i32, i32, i32)> {
-            self.inner_call(async move |inner| Ok(inner.get().get())).await
+            self.inner_call(|inner|  async move {Ok(inner.get().get())}).await
         }
 
         async fn get_len<'a>(&'a self,b:&'a [u8])->Result<usize>{
             unsafe {
-                self.inner_call_ref(async move |_| Ok(b.len())).await
+                self.inner_call_ref(|_| async move { Ok(b.len())}).await
             }
         }
     }
