@@ -1,7 +1,4 @@
 # fast speed thread safe async execute queue
-
-
-
 ##  Example **Actor**
 ```rust
 use aqueue::{Actor,AResult};
