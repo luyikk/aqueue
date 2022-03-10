@@ -73,7 +73,7 @@ impl<I: 'static> Actor<I> {
     /// self ref error!!
     /// Don't ref your &self
     /// 捕获闭包的借用参数，可能会导致自引用问题，请根据实际情况使用
-    /// ```
+    /// ``` ignore
     /// ///错误的示例; error example
     /// async fn error_example_func(&self, id: i32, desc: &str) -> Result<bool> {
     ///  unsafe {
