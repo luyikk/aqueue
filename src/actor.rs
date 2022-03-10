@@ -1,9 +1,9 @@
 use crate::AQueue;
+use anyhow::Result;
 use std::cell::UnsafeCell;
 use std::future::Future;
 use std::ops::Deref;
 use std::sync::Arc;
-use anyhow::Result;
 
 // Please do not use it at will
 pub struct InnerStore<T>(UnsafeCell<T>);
@@ -53,10 +53,11 @@ impl<I: 'static> Actor<I> {
     }
 
     #[inline]
-    pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
+    pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
     where
-        T: Future<Output = Result<S>> + Send  + 'static,
-        S: 'static+Sync+Send, {
+        T: Future<Output = Result<S>> + Send + 'static,
+        S: 'static + Sync + Send,
+    {
         self.queue.run(call, self.inner.clone()).await
     }
 
@@ -86,10 +87,11 @@ impl<I: 'static> Actor<I> {
     /// }
     /// ```
     #[inline]
-    pub async unsafe fn inner_call_ref<'a,T,S>(&'a self, call: impl FnOnce(Arc<InnerStore<I>>) -> T ) -> Result<S>
-        where
-            T: Future<Output = Result<S>> + Send  + 'a,
-            S: 'static+Sync+Send, {
+    pub async unsafe fn inner_call_ref<'a, T, S>(&'a self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
+    where
+        T: Future<Output = Result<S>> + Send + 'a,
+        S: 'static + Sync + Send,
+    {
         self.queue.ref_run(call, self.inner.clone()).await
     }
 }
