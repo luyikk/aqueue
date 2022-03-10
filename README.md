@@ -232,7 +232,7 @@ impl IDatabase for Actor<DataBases>{
             // warn: 
             // Don't ref your &self
             self.inner_call_ref(|inner| async move {
-                inner.get_mut().insert_user(&name, gold).await
+                inner.get_mut().insert_user(name, gold).await
             }).await
         }
     }
