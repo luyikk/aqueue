@@ -55,9 +55,9 @@ impl AQueue {
     /// # Safety
     /// 捕获闭包的借用参数，因为通过指针转换,可能会导致自引用问题，请注意
     #[inline]
-    pub async unsafe fn ref_run<'a, A, T, S>(&'a self, call: impl FnOnce(A) -> T, arg: A) -> Result<S>
+    pub async unsafe fn ref_run<A, T, S>(&self, call: impl FnOnce(A) -> T, arg: A) -> Result<S>
     where
-        T: Future<Output = Result<S>> + Send + 'a,
+        T: Future<Output = Result<S>> + Send,
         S: Sync + Send + 'static,
         A: Send + Sync + 'static,
     {
