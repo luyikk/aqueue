@@ -7,7 +7,7 @@ use tokio::time::{sleep, Duration};
 static mut VALUE: u64 = 0;
 
 #[tokio::test]
-async fn test() -> Result<()> {
+async fn test_base() -> Result<()> {
     let queue = Arc::new(AQueue::new());
 
     let a_queue = queue.clone();
