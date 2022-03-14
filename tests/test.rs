@@ -46,7 +46,7 @@ async fn test_base() -> Result<()> {
 
     let start = Instant::now();
     let mut v = 0u64;
-    for i in 0..2000000 {
+    for i in 0..10000000 {
         v = queue
             .run(
                 |x| async move {
@@ -62,7 +62,7 @@ async fn test_base() -> Result<()> {
 
     println!("{} {}", start.elapsed().as_secs_f32(), v);
 
-    assert_eq!(v, 1999999000000);
+    assert_eq!(v, 49999995000000);
 
     Ok(())
 }
