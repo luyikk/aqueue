@@ -1,23 +1,24 @@
 mod item;
+
 use anyhow::{anyhow, Result};
-use async_oneshot::Receiver;
-use async_trait::async_trait;
 use concurrent_queue::ConcurrentQueue;
-pub use item::AQueueItem;
 use std::future::Future;
 use std::hint::spin_loop;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicU8, Ordering};
+use async_oneshot::Receiver;
 
-#[async_trait]
-pub trait QueueItem {
-    async fn run(&self) -> Result<()>;
-}
+use crate::queue::item::QueueItem;
+
+/// dyn future item trait
+trait IQueueItem: Future<Output = Result<()>> {}
 
 const IDLE: u8 = 0;
 const OPEN: u8 = 1;
 
+/// async future thread safe queue
 pub struct AQueue {
-    deque: ConcurrentQueue<Box<dyn QueueItem + Send + Sync>>,
+    deque: ConcurrentQueue<Pin<Box<dyn IQueueItem + Send>>>,
     state: AtomicU8,
     lock: AtomicU8,
 }
@@ -36,41 +37,43 @@ impl Default for AQueue {
 }
 
 impl AQueue {
+
     pub fn new() -> AQueue {
         AQueue::default()
     }
 
     #[inline]
     pub async fn run<A, T, S>(&self, call: impl FnOnce(A) -> T, arg: A) -> Result<S>
-    where
-        T: Future<Output = Result<S>> + Send + 'static,
-        S: 'static + Sync + Send,
-        A: Send + Sync + 'static,
+        where
+            T: Future<Output = Result<S>> + Send + 'static,
+            S: Sync + Send + 'static,
+            A: Send + Sync + 'static,
     {
-        let (rx, item) = AQueueItem::new(Box::pin(call(arg)));
-        self.push(rx, Box::new(item)).await
+        let (rx, item) = QueueItem::new(Box::pin(call(arg)));
+        self.push(rx, Box::pin(item)).await
     }
 
     /// # Safety
     /// 捕获闭包的借用参数，因为通过指针转换,可能会导致自引用问题，请注意
     #[inline]
     pub async unsafe fn ref_run<'a, A, T, S>(&'a self, call: impl FnOnce(A) -> T, arg: A) -> Result<S>
-    where
-        T: Future<Output = Result<S>> + Send + 'a,
-        S: 'static + Sync + Send,
-        A: Send + Sync + 'static,
+        where
+            T: Future<Output = Result<S>> + Send + 'a,
+            S: Sync + Send + 'static,
+            A: Send + Sync + 'static,
     {
-        let (rx, item): (Receiver<Result<S>>, Box<dyn QueueItem + Send + Sync + 'a>) = {
-            let (rx, item) = AQueueItem::new(Box::pin(call(arg)));
-            (rx, Box::new(item))
+        let (rx, item): (Receiver<Result<S>>,Box<Pin<Box<dyn IQueueItem+ Send+'a>>>) = {
+            let (rx, item) = QueueItem::new(Box::pin(call(arg)));
+            (rx, Box::new(Box::pin(item)))
         };
 
-        let item = Box::from_raw(std::mem::transmute(Box::into_raw(item)));
-        self.push(rx, item).await
+        let item= Box::from_raw(std::mem::transmute(Box::into_raw(item)));
+        self.push(rx,*item).await
+
     }
 
     #[inline]
-    pub async fn push<T>(&self, rx: Receiver<Result<T>>, item: Box<dyn QueueItem + Send + Sync>) -> Result<T> {
+    async fn push<S>(&self, rx: Receiver<Result<S>>, item: Pin<Box<dyn IQueueItem+ Send>>) -> Result<S> {
         self.deque.push(item).map_err(|err| anyhow!(err.to_string()))?;
 
         while self.lock.load(Ordering::Relaxed) == OPEN {
@@ -82,7 +85,7 @@ impl AQueue {
     }
 
     #[inline]
-    pub async fn run_ing(&self) -> Result<()> {
+    async fn run_ing(&self) -> Result<()> {
         if self.state.compare_exchange(IDLE, OPEN, Ordering::Acquire, Ordering::Acquire) == Ok(IDLE) {
             'recv: loop {
                 let item = {
@@ -93,7 +96,7 @@ impl AQueue {
                     }
                 };
                 self.lock.store(IDLE, Ordering::Release);
-                item.run().await?;
+                item.await?;
             }
 
             self.state.store(IDLE, Ordering::Release);

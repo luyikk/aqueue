@@ -1,5 +1,6 @@
-pub mod actor;
 pub mod queue;
+pub mod actor;
+
 
 pub use actor::Actor;
-pub use queue::{AQueue, AQueueItem, QueueItem};
+pub use queue::AQueue;

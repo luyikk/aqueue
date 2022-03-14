@@ -1,52 +1,49 @@
-use super::QueueItem;
+use crate::queue::IQueueItem;
 use anyhow::{anyhow, Result};
 use async_oneshot::{oneshot, Receiver, Sender};
-use async_trait::async_trait;
-use std::cell::RefCell;
 use std::future::Future;
 use std::pin::Pin;
+use std::task::Poll;
 
 pub type BoxFuture<'a, S> = Pin<Box<dyn Future<Output = Result<S>> + Send + 'a>>;
 
-pub struct AQueueItem<'a, S> {
-    call: RefCell<Option<BoxFuture<'a, S>>>,
-    result_sender: RefCell<Option<Sender<Result<S>>>>,
+/// AQueue run item
+pub struct QueueItem<'a, S> {
+    call: BoxFuture<'a, S>,
+    result_sender: Sender<Result<S>>,
 }
 
-unsafe impl<'a, S> Send for AQueueItem<'a, S> {}
-unsafe impl<'a, S> Sync for AQueueItem<'a, S> {}
-
-#[async_trait]
-impl<'a, S> QueueItem for AQueueItem<'a, S>
+impl<'a, S> Future for QueueItem<'a, S>
 where
-    S: 'static + Sync + Send,
+    S: Sync + Send + 'static,
 {
+    type Output = Result<()>;
+
     #[inline]
-    async fn run(&self) -> Result<()> {
-        let mut sender = self.result_sender.take().ok_or_else(|| anyhow!("not call one_shot is none"))?;
-        sender.send(self.run().await).map_err(|_| anyhow!("rx is close"))
+    fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+        let my = Pin::into_inner(self);
+
+        match Pin::new(&mut  my.call).poll(cx) {
+            Poll::Ready(r) => {
+                Poll::Ready(my.result_sender.send(r).map_err(|_| anyhow!("rx is close")))
+            }
+            Poll::Pending => Poll::Pending,
+        }
     }
 }
 
-impl<'a, S> AQueueItem<'a, S>
-where
-    S: 'static + Sync + Send,
-{
+impl<'a, S> IQueueItem for QueueItem<'a, S> where  S: Sync + Send + 'static {}
+
+
+impl<'a, S> QueueItem<'a,S>
+    where  S: Sync + Send + 'static{
     #[inline]
-    pub fn new(call: BoxFuture<'a, S>) -> (Receiver<Result<S>>, Self) {
-        let (tx, rx) = oneshot();
-        (
-            rx,
-            AQueueItem {
-                call: RefCell::new(Some(call)),
-                result_sender: RefCell::new(Some(tx)),
-            },
-        )
+    pub fn new(call:BoxFuture<'a,S>)-> (Receiver<Result<S>>, Self){
+        let (result_sender, rx) = oneshot();
+        (rx,Self{
+            call,
+            result_sender
+        })
     }
 
-    #[inline]
-    async fn run(&self) -> Result<S> {
-        let call = self.call.take().ok_or_else(|| anyhow!("not call fn is none"))?;
-        call.await
-    }
 }
