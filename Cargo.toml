@@ -25,3 +25,8 @@ sqlx = { version="0.5", features = [ "sqlite", "runtime-tokio-native-tls" ] }
 async-trait="0.1"
 dotenv = "0.15"
 lazy_static = "1.4"
+criterion={version="0.3.5",features=["async_tokio"]}
+
+[[bench]]
+name = "bench"
+harness = false
