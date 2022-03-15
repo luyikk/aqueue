@@ -1,5 +1,7 @@
 use anyhow::Result;
 use aqueue::Actor;
+use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
+use tokio::join;
 
 #[derive(Default,Debug)]
 struct TestBench {
@@ -57,11 +59,6 @@ lazy_static::lazy_static!{
     };
 }
 
-
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
-use tokio::join;
-
-
 fn benchmark(c: &mut Criterion) {
     let size: usize = 1000000;
     c.bench_with_input(BenchmarkId::new("single_task_test", size), &size, |b, &s| {
@@ -90,7 +87,6 @@ async fn single_task_test(size: usize){
 
 async fn multi_task_test(size: usize){
     BENCH_DATA.clean().await.unwrap();
-
     let a=tokio::spawn(async move{
         for i in 0..size {
             BENCH_DATA.add(i).await.unwrap();
@@ -103,9 +99,7 @@ async fn multi_task_test(size: usize){
         }
     });
 
-
     let _=join!(a,b);
-
 }
 
 
