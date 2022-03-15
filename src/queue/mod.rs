@@ -46,7 +46,7 @@ impl AQueue {
     where
         T: Future<Output = Result<S>> + Send + 'static,
         S: Sync + Send + 'static,
-        A: Send + Sync + 'static, {
+        A: Sync + Send + 'static, {
         let (result_receiver, item) = QueueItem::new(call(arg));
         self.push(result_receiver, Box::pin(item)).await
     }
@@ -58,7 +58,7 @@ impl AQueue {
     where
         T: Future<Output = Result<S>> + Send,
         S: Sync + Send + 'static,
-        A: Send + Sync + 'static, {
+        A: Sync + Send + 'static, {
         type BoxPinBoxFutureLocal<'a> = Box<Pin<Box<dyn IQueueItem + Send + 'a>>>;
         let (result_receiver, item): (Receiver<Result<S>>, BoxPinBoxFutureLocal<'_>) = {
             let (result_receiver, item) = QueueItem::new(call(arg));
