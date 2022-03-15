@@ -47,8 +47,8 @@ impl AQueue {
         T: Future<Output = Result<S>> + Send + 'static,
         S: Sync + Send + 'static,
         A: Send + Sync + 'static, {
-        let (rx, item) = QueueItem::new(call(arg));
-        self.push(rx, Box::pin(item)).await
+        let (result_receiver, item) = QueueItem::new(call(arg));
+        self.push(result_receiver, Box::pin(item)).await
     }
 
     /// # Safety
@@ -60,17 +60,17 @@ impl AQueue {
         S: Sync + Send + 'static,
         A: Send + Sync + 'static, {
         type BoxPinBoxFutureLocal<'a> = Box<Pin<Box<dyn IQueueItem + Send + 'a>>>;
-        let (rx, item): (Receiver<Result<S>>, BoxPinBoxFutureLocal<'_>) = {
-            let (rx, item) = QueueItem::new(call(arg));
-            (rx, Box::new(Box::pin(item)))
+        let (result_receiver, item): (Receiver<Result<S>>, BoxPinBoxFutureLocal<'_>) = {
+            let (result_receiver, item) = QueueItem::new(call(arg));
+            (result_receiver, Box::new(Box::pin(item)))
         };
 
         let item = Box::from_raw(std::mem::transmute(Box::into_raw(item)));
-        self.push(rx, *item).await
+        self.push(result_receiver, *item).await
     }
 
     #[inline]
-    async fn push<S>(&self, rx: Receiver<Result<S>>, item: BoxPinQueueItemFuture) -> Result<S> {
+    async fn push<S>(&self, result_receiver: Receiver<Result<S>>, item: BoxPinQueueItemFuture) -> Result<S> {
         self.deque.push(item).map_err(|err| anyhow!(err.to_string()))?;
 
         while self.lock.load(Ordering::Relaxed) == OPEN {
@@ -78,7 +78,7 @@ impl AQueue {
         }
 
         self.run_ing().await?;
-        rx.await.map_err(|_| anyhow!("tx is close"))?
+        result_receiver.await.map_err(|_| anyhow!("tx is close"))?
     }
 
     #[inline]
@@ -88,7 +88,7 @@ impl AQueue {
                 let item = {
                     self.lock.store(OPEN, Ordering::Release);
                     match self.deque.pop() {
-                        Ok(p) => p,
+                        Ok(item) => item,
                         _ => break 'recv,
                     }
                 };

@@ -23,8 +23,8 @@ where
 {
     #[inline]
     pub fn new(call: Fu) -> (Receiver<Fu::Output>, Self) {
-        let (result_sender, rx) = oneshot();
-        (rx, Self { call, result_sender })
+        let (result_sender, result_receiver) = oneshot();
+        (result_receiver, Self { call, result_sender })
     }
 }
 
