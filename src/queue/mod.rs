@@ -1,5 +1,6 @@
 mod item;
 
+use crate::queue::item::QueueItem;
 use anyhow::{anyhow, Result};
 use async_oneshot::Receiver;
 use concurrent_queue::ConcurrentQueue;
@@ -8,25 +9,23 @@ use std::hint::spin_loop;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU8, Ordering};
 
-use crate::queue::item::QueueItem;
-
-/// dyn future item trait
-trait IQueueItem: Future<Output = Result<()>> {}
-
 const IDLE: u8 = 0;
 const OPEN: u8 = 1;
 
+/// dyn future item trait
+trait IQueueItem: Future<Output = Result<()>> {}
+/// run future item
+type BoxPinQueueItemFuture = Pin<Box<dyn IQueueItem + Send>>;
+
 /// async future thread safe queue
 pub struct AQueue {
-    deque: ConcurrentQueue<Pin<Box<dyn IQueueItem + Send>>>,
+    deque: ConcurrentQueue<BoxPinQueueItemFuture>,
     state: AtomicU8,
     lock: AtomicU8,
 }
 
-unsafe impl Send for AQueue {}
-unsafe impl Sync for AQueue {}
-
 impl Default for AQueue {
+    #[inline]
     fn default() -> Self {
         AQueue {
             deque: ConcurrentQueue::unbounded(),
@@ -37,6 +36,7 @@ impl Default for AQueue {
 }
 
 impl AQueue {
+    #[inline]
     pub fn new() -> AQueue {
         AQueue::default()
     }
@@ -46,9 +46,8 @@ impl AQueue {
     where
         T: Future<Output = Result<S>> + Send + 'static,
         S: Sync + Send + 'static,
-        A: Send + Sync + 'static,
-    {
-        let (rx, item) = QueueItem::new(Box::pin(call(arg)));
+        A: Send + Sync + 'static, {
+        let (rx, item) = QueueItem::new(call(arg));
         self.push(rx, Box::pin(item)).await
     }
 
@@ -59,10 +58,10 @@ impl AQueue {
     where
         T: Future<Output = Result<S>> + Send,
         S: Sync + Send + 'static,
-        A: Send + Sync + 'static,
-    {
-        let (rx, item): (Receiver<Result<S>>, Box<Pin<Box<dyn IQueueItem + Send>>>) = {
-            let (rx, item) = QueueItem::new(Box::pin(call(arg)));
+        A: Send + Sync + 'static, {
+        type BoxPinBoxFutureLocal<'a> = Box<Pin<Box<dyn IQueueItem + Send + 'a>>>;
+        let (rx, item): (Receiver<Result<S>>, BoxPinBoxFutureLocal<'_>) = {
+            let (rx, item) = QueueItem::new(call(arg));
             (rx, Box::new(Box::pin(item)))
         };
 
@@ -71,7 +70,7 @@ impl AQueue {
     }
 
     #[inline]
-    async fn push<S>(&self, rx: Receiver<Result<S>>, item: Pin<Box<dyn IQueueItem + Send>>) -> Result<S> {
+    async fn push<S>(&self, rx: Receiver<Result<S>>, item: BoxPinQueueItemFuture) -> Result<S> {
         self.deque.push(item).map_err(|err| anyhow!(err.to_string()))?;
 
         while self.lock.load(Ordering::Relaxed) == OPEN {

@@ -56,8 +56,7 @@ impl<I: 'static> Actor<I> {
     pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
     where
         T: Future<Output = Result<S>> + Send + 'static,
-        S: 'static + Sync + Send,
-    {
+        S: 'static + Sync + Send, {
         self.queue.run(call, self.inner.clone()).await
     }
 
@@ -90,8 +89,7 @@ impl<I: 'static> Actor<I> {
     pub async unsafe fn inner_call_ref<'a, T, S>(&'a self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
     where
         T: Future<Output = Result<S>> + Send + 'a,
-        S: 'static + Sync + Send,
-    {
+        S: 'static + Sync + Send, {
         self.queue.ref_run(call, self.inner.clone()).await
     }
 }
