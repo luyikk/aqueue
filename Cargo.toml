@@ -16,6 +16,8 @@ async-trait="0.1"
 concurrent-queue = "1.2"
 async-oneshot = "0.5"
 anyhow="1.0"
+pin-project-lite = "0.2"
+futures-util = "0.3"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

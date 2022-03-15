@@ -4,13 +4,17 @@ use async_oneshot::{oneshot, Receiver, Sender};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::Poll;
+use futures_util::ready;
 
 pub type BoxFuture<'a, S> = Pin<Box<dyn Future<Output = Result<S>> + Send + 'a>>;
 
-/// AQueue run item
-pub struct QueueItem<'a, S> {
-    call: BoxFuture<'a, S>,
-    result_sender: Sender<Result<S>>,
+pin_project_lite::pin_project! {
+    /// AQueue run item
+    pub struct QueueItem<'a, S> {
+        #[pin]
+        call: BoxFuture<'a, S>,
+        result_sender: Sender<Result<S>>,
+    }
 }
 
 impl<'a, S> Future for QueueItem<'a, S>
@@ -21,11 +25,11 @@ where
 
     #[inline]
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
-        let my = Pin::into_inner(self);
-        match Pin::new(&mut my.call).poll(cx) {
-            Poll::Ready(r) => Poll::Ready(my.result_sender.send(r).map_err(|_| anyhow!("rx is close"))),
-            Poll::Pending => Poll::Pending,
-        }
+        let my = self.project();
+        Poll::Ready( match my.result_sender.send(ready!(my.call.poll(cx))){
+            Ok(_)=>Ok(()),
+            Err(_)=>Err(anyhow!("rx is close"))
+        })
     }
 }
 
