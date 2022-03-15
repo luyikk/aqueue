@@ -86,6 +86,7 @@ async fn test_string() -> Result<()> {
 use aqueue::actor::Actor;
 use async_trait::async_trait;
 use std::cell::Cell;
+use tokio::join;
 use tokio::task::JoinHandle;
 
 #[tokio::test]
@@ -146,13 +147,8 @@ async fn test_struct() -> Result<()> {
     let x = make.run(1, 2).await;
     assert_eq!(x, 3);
 
-    let start = Instant::now();
-    for i in 0..2000000 {
-        make.run(i, i).await;
-    }
 
-    println!("{} {}", start.elapsed().as_secs_f32(), make.inner.get_count());
-
+    let begin=Instant::now();
     let a_make = make.clone();
     let a = tokio::spawn(async move {
         let start = Instant::now();
@@ -173,8 +169,18 @@ async fn test_struct() -> Result<()> {
         println!("b {} {}", start.elapsed().as_secs_f32(), b_make.inner.get_count());
     });
 
-    a.await?;
-    b.await?;
+    let c= tokio::spawn(async move {
+        let start = Instant::now();
+        for i in 0..2000000 {
+            make.run(i, i).await;
+        }
+        println!("c {} {}", start.elapsed().as_secs_f32(), make.inner.get_count());
+    });
+
+    let (a,b,c)= join!(a,b,c);
+    (a?,b?,c?);
+    println!("all secs:{}",begin.elapsed().as_secs_f32());
+
     Ok(())
 }
 
