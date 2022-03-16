@@ -61,7 +61,7 @@ lazy_static::lazy_static!{
 
 fn benchmark(c: &mut Criterion) {
     let size: usize = 1000000;
-    c.bench_with_input(BenchmarkId::new("single_task_test", size), &size, |b, &s| {
+    c.bench_with_input(BenchmarkId::new("single_task_actor_call", size), &size, |b, &s| {
         // Insert a call to `to_async` to convert the bencher to async mode.
         // The timing loops are the same as with the normal bencher.
         b.to_async(tokio::runtime::Builder::new_current_thread().build().unwrap()).iter(|| single_task_test(s));
@@ -69,7 +69,7 @@ fn benchmark(c: &mut Criterion) {
 
     println!("single_task_test all:{}",BENCH_DATA.get());
 
-    c.bench_with_input(BenchmarkId::new("multi_task_test", size), &size, |b, &s| {
+    c.bench_with_input(BenchmarkId::new("multi_task_actor_call", size), &size, |b, &s| {
         // Insert a call to `to_async` to convert the bencher to async mode.
         // The timing loops are the same as with the normal bencher.
         b.to_async(tokio::runtime::Builder::new_multi_thread().build().unwrap()).iter(|| multi_task_test(s/2));
