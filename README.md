@@ -1,4 +1,6 @@
 # fast speed thread safe async execute queue
+![https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue](https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue)
+
 ##  Example **Actor**
 ```rust
 use aqueue::{Actor,AResult};
