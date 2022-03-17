@@ -1,7 +1,7 @@
 # fast speed thread safe async execute queue
 [![Latest Version](https://img.shields.io/crates/v/aqueue.svg)](https://crates.io/crates/aqueue)
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/aqueue)
-![https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue](https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue)](https://rust-reportcard.xuri.me/report/github.com/luyikk/aqueue)
 [![Rust CI](https://github.com/luyikk/aqueue/actions/workflows/rust.yml/badge.svg)](https://github.com/luyikk/aqueue/actions/workflows/rust.yml)
 ##  Example **Actor**
 ```rust
