@@ -1,17 +1,17 @@
 use anyhow::Result;
 use std::future::Future;
-use async_lock::Semaphore;
+use async_lock::Mutex;
 
 /// async future thread safe queue
 pub struct AQueue {
-    lock: async_lock::Semaphore,
+    lock: async_lock::Mutex<()>,
 }
 
 impl Default for AQueue {
     #[inline]
     fn default() -> Self {
         AQueue {
-            lock: Semaphore::new(1),
+            lock: Mutex::new(()),
         }
     }
 }
@@ -36,7 +36,7 @@ impl AQueue {
     where
         T: Future<Output = Result<S>>,
     {
-        let guard =  self.lock.acquire().await;
+        let guard =  self.lock.lock().await;
         let r=future.await;
         drop(guard);
         r
