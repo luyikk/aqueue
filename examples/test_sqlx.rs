@@ -37,6 +37,7 @@ impl DataBases {
     }
     /// insert user data
     async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {
+        // println!("insert {} name:{} gold:{}",self.auto_id,name,gold);
         self.auto_id += 1;
         let row = sqlx::query(
             r#"
@@ -81,13 +82,10 @@ impl IDatabase for Actor<DataBases> {
             .await
     }
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
-        unsafe {
-            // warn:
-            // Don't ref your &self
-            self.inner_call_ref(|inner| async move { inner.get_mut().insert_user(name, gold).await })
-                .await
-        }
+        self.inner_call(|inner| async move { inner.get_mut().insert_user(name, gold).await })
+            .await
     }
+
     async fn select_all_users(&self) -> Result<Vec<User>> {
         unsafe {
             // warn:

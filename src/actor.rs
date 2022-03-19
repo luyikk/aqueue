@@ -55,41 +55,26 @@ impl<I: 'static> Actor<I> {
     #[inline]
     pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
     where
-        T: Future<Output = Result<S>> + Send + 'static,
-        S: 'static + Sync + Send, {
+        T: Future<Output = Result<S>>,
+    {
+        self.queue.run(call, self.inner.clone()).await
+    }
+
+    /// # Safety
+    /// For compatibility with older versions
+    #[inline]
+    pub  async unsafe fn inner_call_ref<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
+    where
+        T: Future<Output = Result<S>>,
+    {
         self.queue.run(call, self.inner.clone()).await
     }
 
     /// # Safety
     /// This is a thread unsafe way to get
     /// When using, please make sure there is no thread safety problem
-    /// 因为获取的时候是直接抓取当前状态,并不是等待线程同步完成后拿取结果,所以请在需要的场合使用
     #[inline]
     pub unsafe fn deref_inner(&self) -> RefInner<'_, I> {
         RefInner { value: self.inner.get() }
-    }
-
-    /// # Safety
-    /// self ref error!!
-    /// Don't ref your &self
-    /// 捕获闭包的借用参数，可能会导致自引用问题，请根据实际情况使用
-    /// ``` ignore
-    /// ///错误的示例; error example
-    /// async fn error_example_func(&self, id: i32, desc: &str) -> Result<bool> {
-    ///  unsafe {
-    ///     self.inner_call_ref(async move |inner| {
-    ///             // use &self error
-    ///             let context= self.get_context().await?;
-    ///             unimplemented!();
-    ///         }).await
-    ///     }
-    /// }
-    /// ```
-    #[inline]
-    pub async unsafe fn inner_call_ref<'a, T, S>(&'a self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
-    where
-        T: Future<Output = Result<S>> + Send + 'a,
-        S: 'static + Sync + Send, {
-        self.queue.ref_run(call, self.inner.clone()).await
     }
 }

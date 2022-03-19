@@ -1,7 +1,12 @@
 use anyhow::Result;
+use aqueue::actor::Actor;
 use aqueue::AQueue;
+use async_trait::async_trait;
+use futures_util::try_join;
+use std::cell::Cell;
 use std::sync::Arc;
 use std::time::Instant;
+use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 
 static mut VALUE: u64 = 0;
@@ -24,7 +29,8 @@ async fn test_base() -> Result<()> {
             .await;
 
         println!("{:?}", x);
-    });
+    })
+    .await?;
 
     let a_queue = queue.clone();
     tokio::spawn(async move {
@@ -40,7 +46,8 @@ async fn test_base() -> Result<()> {
                 .await
                 .unwrap();
         }
-    });
+    })
+    .await?;
 
     sleep(Duration::from_secs(2)).await;
 
@@ -82,12 +89,6 @@ async fn test_string() -> Result<()> {
 
     Ok(())
 }
-
-use aqueue::actor::Actor;
-use async_trait::async_trait;
-use std::cell::Cell;
-use tokio::join;
-use tokio::task::JoinHandle;
 
 #[tokio::test]
 async fn test_struct() -> Result<()> {
@@ -147,8 +148,7 @@ async fn test_struct() -> Result<()> {
     let x = make.run(1, 2).await;
     assert_eq!(x, 3);
 
-
-    let begin=Instant::now();
+    let begin = Instant::now();
     let a_make = make.clone();
     let a = tokio::spawn(async move {
         let start = Instant::now();
@@ -169,7 +169,7 @@ async fn test_struct() -> Result<()> {
         println!("b {} {}", start.elapsed().as_secs_f32(), b_make.inner.get_count());
     });
 
-    let c= tokio::spawn(async move {
+    let c = tokio::spawn(async move {
         let start = Instant::now();
         for i in 0..2000000 {
             make.run(i, i).await;
@@ -177,9 +177,9 @@ async fn test_struct() -> Result<()> {
         println!("c {} {}", start.elapsed().as_secs_f32(), make.inner.get_count());
     });
 
-    let (a,b,c)= join!(a,b,c);
-    (a?,b?,c?);
-    println!("all secs:{}",begin.elapsed().as_secs_f32());
+    try_join!(a, b, c)?;
+
+    println!("all secs:{}", begin.elapsed().as_secs_f32());
 
     Ok(())
 }
@@ -298,7 +298,7 @@ async fn test_actor() -> Result<()> {
         }
 
         async fn get_len<'a>(&'a self, b: &'a [u8]) -> Result<usize> {
-            unsafe { self.inner_call_ref(|_| async move { Ok(b.len()) }).await }
+            self.inner_call(|_| async move { Ok(b.len()) }).await
         }
     }
 
