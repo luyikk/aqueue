@@ -117,7 +117,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
 
-        try_join!(a,b,c)?;
+        try_join!(a, b, c)?;
 
         println!(
             "test b count:{} value:{} time:{} qps:{}",
@@ -130,7 +130,6 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
 ```
 ```shell
 test a count:2000000 value:1999999000000 time:0.098685 qps:20408000
