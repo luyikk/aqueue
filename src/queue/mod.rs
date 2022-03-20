@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::future::Future;
+use std::ptr::NonNull;
 use async_lock::Mutex;
 
 /// async future thread safe queue
@@ -36,9 +37,7 @@ impl AQueue {
     where
         T: Future<Output = Result<S>>,
     {
-        let guard =  self.lock.lock().await;
-        let r=future.await;
-        drop(guard);
-        r
+        let _guard = self.lock.lock().await;
+        future.await
     }
 }

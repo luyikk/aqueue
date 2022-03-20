@@ -307,14 +307,14 @@ async fn test_actor() -> Result<()> {
     let b: JoinHandle<Result<()>> = tokio::spawn(async move {
         for i in 0..100 {
             let x = b_foo.set(i - 1, i + 1).await?;
-            println!("i:{}", x);
+            println!("b:{}", x);
         }
         Ok(())
     });
 
     for i in 200..300 {
         let x = a_foo.set(i - 1, i + 1).await?;
-        println!("i:{}", x);
+        println!("a:{}", x);
     }
     b.await??;
     assert_eq!((200, 29700, 30100), a_foo.get().await?);
