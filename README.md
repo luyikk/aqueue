@@ -3,93 +3,92 @@
 [![Rust Documentation](https://img.shields.io/badge/api-rustdoc-blue.svg)](https://docs.rs/aqueue)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/luyikk/aqueue)](https://rust-reportcard.xuri.me/report/github.com/luyikk/aqueue)
 [![Rust CI](https://github.com/luyikk/aqueue/actions/workflows/rust.yml/badge.svg)](https://github.com/luyikk/aqueue/actions/workflows/rust.yml)
+
+## 1.2 version 
+1. Greatly optimized performance
+2. Abolished inner_call_ref()
+3. Anyhow::Result is no longer used as a required return
+4. inner_call() can run any asynchronous closure
+
+
 ##  Example **Actor**
 ```rust
-use aqueue::{Actor,AResult};
-use std::sync::Arc;
-use std::error::Error;
-use std::time::Instant;
+use aqueue::Actor;
 use async_trait::async_trait;
+use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(Default)]
-struct Foo{
-    count:u64,
-    i:i128
+struct Foo {
+    count: u64,
+    i: i128,
 }
 
-impl Foo{  
-    pub fn add(&mut self,x:i32)->i128{
-        self.count+=1;
-        self.i+=x as i128;
+impl Foo {
+    pub fn add(&mut self, x: i32) -> i128 {
+        self.count += 1;
+        self.i += x as i128;
         self.i
-    }   
-    fn reset(&mut self){
-        self.count=0;
-        self.i=0;
-    }   
-    pub fn get(&self)->i128{
+    }
+    fn reset(&mut self) {
+        self.count = 0;
+        self.i = 0;
+    }
+    pub fn get(&self) -> i128 {
         self.i
-    }   
-    pub fn get_count(&self)->u64{
+    }
+    pub fn get_count(&self) -> u64 {
         self.count
     }
 }
 
 #[async_trait]
-pub trait FooRunner{
-    async fn add(&self,x:i32)->anyhow::Result<i128>;
-    async fn reset(&self)->anyhow::Result<()>;
-    async fn get(&self)->anyhow::Result<i128>;
-    async fn get_count(&self)->anyhow::Result<u64>;
+pub trait FooRunner {
+    async fn add(&self, x: i32) -> i128;
+    async fn reset(&self);
+    async fn get(&self) -> i128;
+    async fn get_count(&self) -> u64;
 }
 
 #[async_trait]
-impl FooRunner for Actor<Foo> {  
-    async fn add(&self,x:i32)->anyhow::Result<i128>{
-        self.inner_call(|inner| async move {
-            Ok(inner.get_mut().add(x))
-        }).await
-    }  
-    async fn reset(&self)->anyhow::Result<()>{
-        self.inner_call(|inner| async move  {
-            Ok(inner.get_mut().reset())
-        }).await
-    }  
-    async fn get(&self)->anyhow::Result<i128>{
-        self.inner_call(|inner| async move {
-            Ok(inner.get_mut().get())
-        }).await
-    }  
-    async fn get_count(&self)->anyhow::Result<u64>{
-        self.inner_call( |inner| async move {
-            Ok(inner.get_mut().get_count())
-        }).await
+impl FooRunner for Actor<Foo> {
+    async fn add(&self, x: i32) -> i128 {
+        self.inner_call(|inner| async move { inner.get_mut().add(x) }).await
+    }
+    async fn reset(&self) {
+        self.inner_call(|inner| async move { inner.get_mut().reset() }).await
+    }
+    async fn get(&self) -> i128 {
+        self.inner_call(|inner| async move { inner.get_mut().get() }).await
+    }
+    async fn get_count(&self) -> u64 {
+        self.inner_call(|inner| async move { inner.get_mut().get_count() }).await
     }
 }
 
 #[tokio::main]
-async fn main()->anyhow::Result<()> {
+async fn main() -> anyhow::Result<()> {
     {
         // Single thread test
         let tf = Arc::new(Actor::new(Foo::default()));
-        tf.add(100).await?;
-        assert_eq!(100, tf.get().await?);
-        tf.add(-100).await.unwrap();
-        assert_eq!(0, tf.get().await?);
-        tf.reset().await?;
+        tf.add(100).await;
+        assert_eq!(100, tf.get().await);
+        tf.add(-100).await;
+        assert_eq!(0, tf.get().await);
+        tf.reset().await;
 
         let start = Instant::now();
         for i in 0..2000000 {
-            if let Err(er) = tf.add(i).await {
-                println!("{}", er);
-            };
+            tf.add(i).await;
         }
 
-        println!("test a count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await?,
-                 tf.get().await?,
-                 start.elapsed().as_secs_f32(),
-                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
+        println!(
+            "test a count:{} value:{} time:{} qps:{}",
+            tf.get_count().await,
+            tf.get().await,
+            start.elapsed().as_secs_f32(),
+            tf.get_count().await / start.elapsed().as_millis() as u64 * 1000
+        );
     }
 
     {
@@ -99,27 +98,21 @@ async fn main()->anyhow::Result<()> {
         let a_tf = tf.clone();
         let a = tokio::spawn(async move {
             for i in 0..1000000 {
-                if let Err(er) = a_tf.add(i).await {
-                    println!("{}", er);
-                };
+                a_tf.add(i).await;
             }
         });
 
         let b_tf = tf.clone();
         let b = tokio::spawn(async move {
             for i in 1000000..2000000 {
-                if let Err(er) = b_tf.add(i).await {
-                    println!("{}", er);
-                };
+                b_tf.add(i).await;
             }
         });
 
         let c_tf = tf.clone();
         let c = tokio::spawn(async move {
             for i in 2000000..3000000 {
-                if let Err(er) = c_tf.add(i).await {
-                    println!("{}", er);
-                };
+                c_tf.add(i).await;
             }
         });
 
@@ -127,15 +120,21 @@ async fn main()->anyhow::Result<()> {
         a.await?;
         b.await?;
 
-        println!("test b count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await?,
-                 tf.get().await?,
-                 start.elapsed().as_secs_f32(),
-                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
+        println!(
+            "test b count:{} value:{} time:{} qps:{}",
+            tf.get_count().await,
+            tf.get().await,
+            start.elapsed().as_secs_f32(),
+            tf.get_count().await / start.elapsed().as_millis() as u64 * 1000
+        );
     }
 
     Ok(())
 }
+```
+```shell
+test a count:2000000 value:1999999000000 time:0.098685 qps:20408000
+test b count:3000000 value:4499998500000 time:0.1486727 qps:20270000
 ```
 
 ## Example Database 
@@ -181,6 +180,7 @@ impl DataBases {
     }
     /// insert user data
     async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {
+        // println!("insert {} name:{} gold:{}",self.auto_id,name,gold);
         self.auto_id += 1;
         let row = sqlx::query(
             r#"
@@ -225,13 +225,10 @@ impl IDatabase for Actor<DataBases> {
             .await
     }
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
-        unsafe {
-            // warn:
-            // Don't ref your &self
-            self.inner_call_ref(|inner| async move { inner.get_mut().insert_user(name, gold).await })
-                .await
-        }
+        self.inner_call(|inner| async move { inner.get_mut().insert_user(name, gold).await })
+            .await
     }
+
     async fn select_all_users(&self) -> Result<Vec<User>> {
         unsafe {
             // warn:
@@ -279,22 +276,19 @@ async fn main() -> Result<()> {
 ```
 
 ```shell
-cargo run --color=always --package aqueue --example test_sqlx --release
-    Finished release [optimized] target(s) in 0.21s
-     Running `target\release\examples\test_sqlx.exe`
 User { id: 1, name: "0", gold: 0.0 }
-User { id: 2, name: "1", gold: 0.0 }
-User { id: 3, name: "2", gold: 0.0 }
-User { id: 4, name: "3", gold: 0.0 }
-User { id: 5, name: "4", gold: 0.0 }
-User { id: 6, name: "5", gold: 0.0 }
+User { id: 2, name: "0", gold: 0.0 }
+User { id: 3, name: "0", gold: 0.0 }
+User { id: 4, name: "10", gold: 0.0 }
+User { id: 5, name: "10", gold: 0.0 }
+User { id: 6, name: "16", gold: 0.0 }
+User { id: 7, name: "10", gold: 0.0 }
 ...
-User { id: 9996, name: "0", gold: 95.0 }
-User { id: 9997, name: "0", gold: 96.0 }
-User { id: 9998, name: "0", gold: 97.0 }
-User { id: 9999, name: "0", gold: 98.0 }
-User { id: 10000, name: "0", gold: 99.0 }
-Process finished with exit code 0
+User { id: 99996, name: "2", gold: 999.0 }
+User { id: 99997, name: "8", gold: 999.0 }
+User { id: 99998, name: "5", gold: 999.0 }
+User { id: 99999, name: "9", gold: 999.0 }
+User { id: 100000, name: "10", gold: 999.0 }
 ```
 
 

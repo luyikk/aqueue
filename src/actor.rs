@@ -1,5 +1,4 @@
 use crate::AQueue;
-use anyhow::Result;
 use std::cell::UnsafeCell;
 use std::future::Future;
 use std::ops::Deref;
@@ -52,20 +51,11 @@ impl<I: 'static> Actor<I> {
         }
     }
 
+    /// Behavior through queues,thread safe call async fn
     #[inline]
-    pub async fn inner_call<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
+    pub async fn inner_call<T, R>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> R
     where
-        T: Future<Output = Result<S>>,
-    {
-        self.queue.run(call, self.inner.clone()).await
-    }
-
-    /// # Safety
-    /// For compatibility with older versions
-    #[inline]
-    pub  async unsafe fn inner_call_ref<T, S>(&self, call: impl FnOnce(Arc<InnerStore<I>>) -> T) -> Result<S>
-    where
-        T: Future<Output = Result<S>>,
+        T: Future<Output = R>,
     {
         self.queue.run(call, self.inner.clone()).await
     }
