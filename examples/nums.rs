@@ -2,6 +2,7 @@ use aqueue::Actor;
 use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Instant;
+use tokio::try_join;
 
 #[derive(Default)]
 struct Foo {
@@ -101,9 +102,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
 
-        c.await?;
-        a.await?;
-        b.await?;
+        try_join!(a,b,c)?;
 
         println!(
             "test b count:{} value:{} time:{} qps:{}",

@@ -17,6 +17,7 @@ use aqueue::Actor;
 use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Instant;
+use tokio::try_join;
 
 #[derive(Default)]
 struct Foo {
@@ -116,9 +117,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
 
-        c.await?;
-        a.await?;
-        b.await?;
+        try_join!(a,b,c)?;
 
         println!(
             "test b count:{} value:{} time:{} qps:{}",
@@ -131,6 +130,7 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
 ```
 ```shell
 test a count:2000000 value:1999999000000 time:0.098685 qps:20408000
@@ -306,13 +306,13 @@ async fn main()->Result<(),Box<dyn Error>> {
             unsafe {
                 // thread safe execute
                 VALUE += x;
-                Ok(VALUE)
+                VALUE
             }
-        }, i).await?;
+        }, i).await;
     }
 
     assert_eq!(v,-1455759936);
-   
+    Ok(())
 }
 
 ```
@@ -324,7 +324,7 @@ use std::sync::Arc;
 use std::cell::{RefCell};
 use std::error::Error;
 use std::time::Instant;
-
+use tokio::try_join;
 
 struct Foo{
     count:u64,
@@ -368,21 +368,21 @@ impl FooRunner {
             queue:AQueue::new()
         }
     }
-    pub async fn add(&self,x:i32)->anyhow::Result<i128>{
+    pub async fn add(&self,x:i32)->i128{
         self.queue.run(|inner| async move  {
-            Ok(inner.0.borrow_mut().add(x))
+            inner.0.borrow_mut().add(x)
         },self.inner.clone()).await
     }
 
-    pub async fn get(&self)->anyhow::Result<i128>{
+    pub async fn get(&self)->i128{
         self.queue.run(|inner| async move  {
-            Ok(inner.0.borrow().get())
+            inner.0.borrow().get()
         },self.inner.clone()).await
     }
 
-    pub async fn get_count(&self)->anyhow::Result<u64>{
+    pub async fn get_count(&self)->u64{
         self.queue.run(|inner| async move {
-            Ok(inner.0.borrow().get_count())
+            inner.0.borrow().get_count()
         },self.inner.clone()).await
     }
 }
@@ -400,16 +400,14 @@ async fn main()->anyhow::Result<()> {
 
         let start = Instant::now();
         for i in 0..2000000 {
-            if let Err(er) = tf.add(i).await {
-                println!("{}", er);
-            };
+            tf.add(i);
         }
 
         println!("test a count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await?,
-                 tf.get().await?,
+                 tf.get_count().await,
+                 tf.get().await,
                  start.elapsed().as_secs_f32(),
-                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);
+                 tf.get_count().await / start.elapsed().as_millis() as u64 * 1000);
     }
 
     {
@@ -419,39 +417,29 @@ async fn main()->anyhow::Result<()> {
         let a_tf = tf.clone();
         let a = tokio::spawn(async move {
             for i in 0..1000000 {
-                if let Err(er) = a_tf.add(i).await {
-                    println!("{}", er);
-                };
+                 a_tf.add(i);
             }
         });
 
         let b_tf = tf.clone();
         let b = tokio::spawn(async move {
             for i in 1000000..2000000 {
-                if let Err(er) = b_tf.add(i).await {
-                    println!("{}", er);
-                };
+                b_tf.add(i);
             }
         });
 
         let c_tf = tf.clone();
         let c = tokio::spawn(async move {
             for i in 2000000..3000000 {
-                if let Err(er) = c_tf.add(i).await {
-                    println!("{}", er);
-                };
+                 c_tf.add(i).await;
             }
         });
-
-        c.await?;
-        a.await?;
-        b.await?;
-
+        try_join!(a,b,c)?;
         println!("test b count:{} value:{} time:{} qps:{}",
-                 tf.get_count().await?,
-                 tf.get().await?,
+                 tf.get_count().await,
+                 tf.get().await,
                  start.elapsed().as_secs_f32(),
-                 tf.get_count().await? / start.elapsed().as_millis() as u64 * 1000);       
+                 tf.get_count().await / start.elapsed().as_millis() as u64 * 1000);       
     }
 
     Ok(())
