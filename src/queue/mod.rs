@@ -1,6 +1,5 @@
 use anyhow::Result;
 use std::future::Future;
-use std::ptr::NonNull;
 use async_lock::Mutex;
 
 /// async future thread safe queue
