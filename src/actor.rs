@@ -30,6 +30,15 @@ pub struct Actor<I> {
     queue: AQueue,
 }
 
+impl<I:Default> Default for Actor<I> {
+    fn default() -> Self {
+        Self{
+            inner: Arc::new(InnerStore::new(Default::default())),
+            queue: AQueue::new(),
+        }
+    }
+}
+
 pub struct RefInner<'a, T: ?Sized> {
     value: &'a T,
 }
