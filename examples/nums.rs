@@ -56,7 +56,7 @@ impl FooRunner for Actor<Foo> {
 async fn main() -> anyhow::Result<()> {
     {
         // Single thread test
-        let tf = Arc::new(Actor::new(Foo::default()));
+        let tf = Actor::new(Foo::default());
         tf.add(100).await;
         assert_eq!(100, tf.get().await);
         tf.add(-100).await;
@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
         tf.reset().await;
 
         let start = Instant::now();
-        for i in 0..2000000 {
+        for i in 0..100000000 {
             tf.add(i).await;
         }
 
@@ -83,26 +83,33 @@ async fn main() -> anyhow::Result<()> {
         let start = Instant::now();
         let a_tf = tf.clone();
         let a = tokio::spawn(async move {
-            for i in 0..1000000 {
+            for i in 0..25000000 {
                 a_tf.add(i).await;
             }
         });
 
         let b_tf = tf.clone();
         let b = tokio::spawn(async move {
-            for i in 1000000..2000000 {
+            for i in 25000000..50000000 {
                 b_tf.add(i).await;
             }
         });
 
         let c_tf = tf.clone();
         let c = tokio::spawn(async move {
-            for i in 2000000..3000000 {
+            for i in 50000000..75000000 {
                 c_tf.add(i).await;
             }
         });
 
-        try_join!(a, b, c)?;
+        let d_tf = tf.clone();
+        let d = tokio::spawn(async move {
+            for i in 75000000..100000000 {
+                d_tf.add(i).await;
+            }
+        });
+
+        try_join!(a, b, c,d)?;
 
         println!(
             "test b count:{} value:{} time:{} qps:{}",
