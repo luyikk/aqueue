@@ -79,17 +79,15 @@ pub trait IDatabase {
     ///       call DB test_unsafe_blocking
     ///  ────────────────────┐
     ///                      │
-    ///                      │
     ///                      ▼
     ///      ┌───────────────▼────────────┐
     ///      │    inner call lock current │
     ///  ┌──►│         thread             │
-    ///  │   │                            │
     ///  │   └───────────────┬────────────┘
     ///  │                   │
     ///  │                   ▼
-    ///  │ call insert_user will blocking current threand
-    ///  │                   │
+    ///  │ call insert_user will lock the current thread again
+    ///  │      current thread unlimited blocking
     ///  │                   │
     ///  └───────────────────┘
     ///
