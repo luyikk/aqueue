@@ -8,7 +8,7 @@ pub use queue::AQueue;
 /// need on feature "tokio" or "async_std"
 /// # tokio:
 /// ``` toml
-/// aqueue = { version = "^1.2.8", features = ["tokio"] }
+/// aqueue = { version = "^1.2.9", features = ["tokio"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -19,16 +19,16 @@ pub use queue::AQueue;
 #[cfg(all(feature = "tokio", not(feature = "async_std")))]
 #[macro_export]
 macro_rules! inner_wait {
-    ($actor:expr,$timeout:expr,$fun:expr) => {{
+    ($actor:expr,$timeout:expr,$fun:expr) => {
         tokio::time::timeout(std::time::Duration::from_millis($timeout), $actor.inner_call($fun))
-    }};
+    };
 }
 
 /// inner call wait ms throw time error
 /// need on feature "tokio" or "async_std"
 /// # async_std:
 /// ``` toml
-/// aqueue = { version = "^1.2.8", features = ["async_std"] }
+/// aqueue = { version = "^1.2.9", features = ["async_std"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -39,7 +39,7 @@ macro_rules! inner_wait {
 #[cfg(all(feature = "async_std", not(feature = "tokio")))]
 #[macro_export]
 macro_rules! inner_wait {
-    ($actor:expr,$timeout:expr,$fun:expr) => {{
+    ($actor:expr,$timeout:expr,$fun:expr) => {
         async_std::future::timeout(std::time::Duration::from_millis($timeout), $actor.inner_call($fun))
-    }};
+    };
 }
