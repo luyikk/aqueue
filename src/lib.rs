@@ -5,10 +5,10 @@ pub use actor::Actor;
 pub use queue::AQueue;
 
 /// inner call wait ms throw time error
-/// need on feature "tokio" or "async_std"
-/// # tokio:
+/// need on feature "tokio_time" or "async_std_time"
+/// # tokio runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.9", features = ["tokio"] }
+/// aqueue = { version = "^1.2.10", features = ["tokio_time"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -16,7 +16,7 @@ pub use queue::AQueue;
 ///         inner_wait!(self, 30000, |_| async move { DB.insert_user(name, gold).await }).await?
 ///     }
 /// ```
-#[cfg(all(feature = "tokio", not(feature = "async_std")))]
+#[cfg(all(feature = "tokio_time", not(feature = "async_std_time")))]
 #[macro_export]
 macro_rules! inner_wait {
     ($actor:expr,$timeout:expr,$fun:expr) => {
@@ -25,10 +25,10 @@ macro_rules! inner_wait {
 }
 
 /// inner call wait ms throw time error
-/// need on feature "tokio" or "async_std"
-/// # async_std:
+/// need on feature "tokio_time" or "async_std_time"
+/// # async_std runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.9", features = ["async_std"] }
+/// aqueue = { version = "^1.2.10", features = ["async_std_time"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -36,7 +36,7 @@ macro_rules! inner_wait {
 ///         inner_wait!(self, 30000, |_| async move { DB.insert_user(name, gold).await }).await?
 ///     }
 /// ```
-#[cfg(all(feature = "async_std", not(feature = "tokio")))]
+#[cfg(all(feature = "async_std_time", not(feature = "tokio_time")))]
 #[macro_export]
 macro_rules! inner_wait {
     ($actor:expr,$timeout:expr,$fun:expr) => {
