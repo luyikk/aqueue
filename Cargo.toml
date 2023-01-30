@@ -1,6 +1,6 @@
 [package]
 name = "aqueue"
-version = "1.2.7"
+version = "1.2.8"
 authors = ["luyi <luyikk@126.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -12,8 +12,8 @@ description = "fast speed thread safe async execute queue."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-wait_tokio = ["tokio/time"]
-wait_async_std = ["async-std/unstable"]
+tokio = ["tokio/time"]
+async_std = ["async-std/unstable"]
 
 [dependencies]
 async-trait = "0.1"
