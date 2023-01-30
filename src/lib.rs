@@ -16,8 +16,8 @@ pub use queue::AQueue;
 /// ```
 #[doc = r#"
 # Example
-```
-    async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
+```doc
+    async fn test_unsafe_blocking(&self, name: String, gold: f64) -> anyhow::Result<bool> {
         inner_wait!(self, 30000, |_| async move { DB.insert_user(name, gold).await }).await?
     }
 ```
