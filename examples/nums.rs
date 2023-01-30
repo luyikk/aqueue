@@ -109,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
             }
         });
 
-        try_join!(a, b, c,d)?;
+        try_join!(a, b, c, d)?;
 
         println!(
             "test b count:{} value:{} time:{} qps:{}",

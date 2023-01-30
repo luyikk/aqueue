@@ -30,9 +30,9 @@ pub struct Actor<I> {
     queue: AQueue,
 }
 
-impl<I:Default> Default for Actor<I> {
+impl<I: Default> Default for Actor<I> {
     fn default() -> Self {
-        Self{
+        Self {
             inner: Arc::new(InnerStore::new(Default::default())),
             queue: AQueue::new(),
         }

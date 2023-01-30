@@ -1,10 +1,9 @@
 use anyhow::{anyhow, Result};
-use aqueue::Actor;
+use aqueue::{inner_wait, Actor};
 use async_trait::async_trait;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
-use std::time::Duration;
 use tokio::task::JoinHandle;
 
 #[derive(sqlx::FromRow, Debug)]
@@ -91,9 +90,8 @@ pub trait IDatabase {
     ///  │                   │
     ///  └───────────────────┘
     ///
-    async fn test_unsafe_blocking(&self,name: String, gold: f64)-> Result<bool>;
+    async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool>;
 }
-
 
 #[async_trait]
 impl IDatabase for Actor<DataBases> {
@@ -118,11 +116,8 @@ impl IDatabase for Actor<DataBases> {
         }
     }
 
-    async fn test_unsafe_blocking(&self,name: String, gold: f64) -> Result<bool> {
-        tokio::time::timeout(Duration::from_secs(30),self.inner_call(|_| async move {
-            // error call method
-            DB.insert_user(name, gold).await
-        })).await?
+    async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
+        inner_wait!(self, 30000, |_| async move { DB.insert_user(name, gold).await }).await?
     }
 }
 
@@ -159,7 +154,7 @@ async fn main() -> Result<()> {
         println!("{:?}", user);
     }
 
-    DB.test_unsafe_blocking("123123".to_string(),1111111f64).await?;
+    DB.test_unsafe_blocking("123123".to_string(), 1111111f64).await?;
 
     Ok(())
 }

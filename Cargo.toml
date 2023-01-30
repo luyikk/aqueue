@@ -1,6 +1,6 @@
 [package]
 name = "aqueue"
-version = "1.2.5"
+version = "1.2.6"
 authors = ["luyi <luyikk@126.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -11,19 +11,25 @@ description = "fast speed thread safe async execute queue."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+wait_tokio = ["tokio/time"]
+wait_async_std = ["async-std/unstable"]
+
 [dependencies]
-async-trait="0.1"
+async-trait = "0.1"
 async-lock = "2.5"
+tokio = { version = "1", optional = true }
+async-std = { version = "1", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }
-sqlx = { version="0.6", features = [ "sqlite", "runtime-tokio-native-tls" ] }
-async-trait="0.1"
+tokio = { version = "1.*", features = ["full"] }
+sqlx = { version = "0.6", features = ["sqlite", "runtime-tokio-native-tls"] }
+async-trait = "0.1"
 dotenv = "0.15"
 lazy_static = "1.4"
-criterion={version="0.3.5",features=["async_tokio"]}
+criterion = { version = "0.4.0", features = ["async_tokio"] }
 futures-util = "0.3"
-anyhow="1.0"
+anyhow = "1.0"
 
 [[bench]]
 name = "bench"
