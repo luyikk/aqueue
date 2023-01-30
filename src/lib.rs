@@ -8,7 +8,7 @@ pub use queue::AQueue;
 /// need on feature "tokio" or "async_std"
 /// # tokio:
 /// ``` toml
-/// aqueue = { version = "^1.2.6", features = ["tokio"] }
+/// aqueue = { version = "^1.2.8", features = ["tokio"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -28,7 +28,7 @@ macro_rules! inner_wait {
 /// need on feature "tokio" or "async_std"
 /// # async_std:
 /// ``` toml
-/// aqueue = { version = "^1.2.6", features = ["async_std"] }
+/// aqueue = { version = "^1.2.8", features = ["async_std"] }
 /// ```
 /// # Example
 /// ``` ignore
