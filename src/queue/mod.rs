@@ -4,7 +4,7 @@ use std::hint::spin_loop;
 
 /// async future thread safe queue
 pub struct AQueue {
-    lock: async_lock::Mutex<()>,
+    lock: Mutex<()>,
 }
 
 impl Default for AQueue {
