@@ -31,7 +31,7 @@ jobs:
       - uses: taiki-e/create-gh-release-action@v1
         with:
           changelog: "CHANGELOG.md"
-          title: "queue $version"
+          title: "aqueue $version"
           branch: master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
