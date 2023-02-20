@@ -1,8 +1,5 @@
 name: Publish Crates
 
-permissions:
-  # TODO: once `releases: write` is supported, use it instead.
-  contents: write
 
 on:
   push:
@@ -24,22 +21,21 @@ defaults:
 
 jobs:
   create-release:
-     runs-on: ubuntu-18.04
+     runs-on: ubuntu-latest
      steps:
       - uses: actions/checkout@v3
         with:
            persist-credentials: false
       - name: Install Rust
         run: rustup update stable --no-self-update
-      - uses: Swatinem/rust-cache@v2  
-      - run: cargo package
       - uses: taiki-e/create-gh-release-action@v1
         with:
           changelog: "CHANGELOG.md"
           title: "queue $version"
           branch: master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: Swatinem/rust-cache@v2      
       - run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
