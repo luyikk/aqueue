@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - v[0-9]+.*
+      
+defaults:
+  run:
+    shell: bash
 
 jobs:
   create-release:
@@ -23,8 +27,6 @@ jobs:
           branch: master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: |
-              cargo login
-              cargo publish
+      - run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
