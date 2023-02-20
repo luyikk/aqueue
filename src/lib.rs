@@ -24,7 +24,6 @@ macro_rules! inner_wait {
     };
 }
 
-
 /// inner call wait ms throw time error
 /// need on feature "tokio_time" or "async_std_time"
 /// # async_std runtime:
