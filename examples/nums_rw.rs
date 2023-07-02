@@ -48,7 +48,7 @@ impl FooRunner for RwModel<Foo> {
         self.call(|inner| async move { inner.get() }).await
     }
     async fn get_count(&self) -> u64 {
-        self.mut_call(|inner| async move { inner.get_count() }).await
+        self.call(|inner| async move { inner.get_count() }).await
     }
 }
 

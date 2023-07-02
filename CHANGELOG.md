@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.0 (2023-07-03)
+* add RwModel
+
 ## 1.2.12 (2023-02-20)
 #### Features
 * test publish [crates.io](https://crates.io/) 2#
