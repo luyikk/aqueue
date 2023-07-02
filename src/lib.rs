@@ -1,8 +1,13 @@
 pub mod actor;
+mod inner_store;
+pub mod model;
 pub mod queue;
+pub mod queue_rwlock;
 
 pub use actor::Actor;
+pub use model::RwModel;
 pub use queue::AQueue;
+pub use queue_rwlock::RwQueue;
 
 /// inner call wait ms throw time error
 /// need on feature "tokio_time" or "async_std_time"
