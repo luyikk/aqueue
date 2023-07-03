@@ -117,7 +117,7 @@ impl IDatabase for Actor<DataBases> {
     }
 
     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-        inner_wait!(self, 30000, |_| async move { DB.insert_user(name, gold).await }).await?
+        inner_wait!(self, 3000, |_| async move { DB.insert_user(name, gold).await }).await?
     }
 }
 

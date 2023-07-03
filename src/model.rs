@@ -1,17 +1,16 @@
 use crate::inner_store::InnerStore;
 use crate::RwQueue;
 use std::future::Future;
-use std::sync::Arc;
 
 pub struct RwModel<I> {
-    inner: Arc<InnerStore<I>>,
+    inner: InnerStore<I>,
     queue: RwQueue,
 }
 
 impl<I: Default> Default for RwModel<I> {
     fn default() -> Self {
         Self {
-            inner: Arc::new(InnerStore::new(Default::default())),
+            inner: InnerStore::new(Default::default()),
             queue: RwQueue::new(),
         }
     }
@@ -21,21 +20,21 @@ impl<I: 'static> RwModel<I> {
     #[inline]
     pub fn new(x: I) -> RwModel<I> {
         RwModel {
-            inner: Arc::new(InnerStore::new(x)),
+            inner: InnerStore::new(x),
             queue: RwQueue::new(),
         }
     }
 
-    /// Behavior through queues,thread safe call async fn write
+    /// Behavior through queues,thread safe call async fn write ref mut
     #[inline]
-    pub async fn mut_call<'a, T, R>(&'a self, call: impl FnOnce(&'a mut I) -> T) -> R
+    pub async fn call_mut<'a, T, R>(&'a self, call: impl FnOnce(&'a mut I) -> T) -> R
     where
         T: Future<Output = R>,
     {
         self.queue.write_run(call, self.inner.get_mut()).await
     }
 
-    /// Behavior through queues,thread safe call async fn read,
+    /// Behavior through queues,thread safe call async fn read ref
     #[inline]
     pub async fn call<'a, T, R>(&'a self, call: impl FnOnce(&'a I) -> T) -> R
     where

@@ -57,7 +57,7 @@ impl ITestBench for Actor<TestBench> {
 impl ITestBench for RwModel<TestBench> {
     #[inline]
     async fn add(&self, i: usize) -> Result<()> {
-        self.mut_call(|inner| async move {
+        self.call_mut(|inner| async move {
             inner.add(i);
             Ok(())
         })
@@ -66,7 +66,7 @@ impl ITestBench for RwModel<TestBench> {
 
     #[inline]
     async fn clean(&self) -> Result<()> {
-        self.mut_call(|inner| async move {
+        self.call_mut(|inner| async move {
             inner.clean();
             Ok(())
         })

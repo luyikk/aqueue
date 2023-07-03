@@ -208,7 +208,7 @@ async fn test_count() -> Result<()> {
     #[async_trait]
     impl IFoo for RwModel<Foo> {
         async fn add_one(&self) -> Result<()> {
-            self.mut_call(|inner| async move {
+            self.call_mut(|inner| async move {
                 inner.add_one();
                 Ok(())
             })
@@ -287,7 +287,7 @@ async fn test_actor() -> Result<()> {
     #[async_trait]
     impl FooRunner for RwModel<Foo> {
         async fn set(&self, x: i32, y: i32) -> i32 {
-            self.mut_call(|inner| async move { inner.set(x, y).await }).await
+            self.call_mut(|inner| async move { inner.set(x, y).await }).await
         }
 
         async fn get(&self) -> (i32, i32, i32) {

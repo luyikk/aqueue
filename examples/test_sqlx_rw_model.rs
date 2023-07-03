@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use aqueue::model::RwModel;
+use aqueue::{call_wait, RwModel};
 use async_trait::async_trait;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
@@ -70,22 +70,47 @@ pub trait IDatabase {
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool>;
     /// select all users table
     async fn select_all_users(&self) -> Result<Vec<User>>;
+    /// ERROR example
+    /// call test_unsafe_block thread blocking
+    /// i use timeout to block unlimited thread blocking
+    ///
+    ///
+    ///       call DB test_unsafe_blocking
+    ///  ────────────────────┐
+    ///                      │
+    ///                      ▼
+    ///      ┌───────────────▼────────────┐
+    ///      │    inner call lock current │
+    ///  ┌──►│         thread             │
+    ///  │   └───────────────┬────────────┘
+    ///  │                   │
+    ///  │                   ▼
+    ///  │ call insert_user will lock the current thread again
+    ///  │      current thread unlimited blocking
+    ///  │                   │
+    ///  └───────────────────┘
+    ///
+    async fn test_unsafe_blocking(&self, name: &str, gold: f64) -> Result<bool>;
 }
 
 #[async_trait]
 impl IDatabase for RwModel<DataBases> {
     async fn create_table(&self) -> Result<()> {
-        self.mut_call(|inner| async move { inner.create_table().await }).await
+        self.call_mut(|inner| async move { inner.create_table().await }).await
     }
     async fn insert_user(&self, name: String, gold: f64) -> Result<bool> {
-        self.mut_call(|inner| async move { inner.insert_user(&name, gold).await }).await
+        self.call_mut(|inner| async move { inner.insert_user(&name, gold).await }).await
     }
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
-        self.mut_call(|inner| async move { inner.insert_user(name, gold).await }).await
+        self.call_mut(|inner| async move { inner.insert_user(name, gold).await }).await
     }
 
     async fn select_all_users(&self) -> Result<Vec<User>> {
         self.call(|inner| async move { inner.select_all_users().await }).await
+    }
+
+    async fn test_unsafe_blocking(&self, name: &str, gold: f64) -> Result<bool> {
+        call_wait!(self, 3000, |_inner| async move { DB.insert_user_ref_name(name, gold).await }).await?
     }
 }
 
@@ -121,6 +146,8 @@ async fn main() -> Result<()> {
     for user in DB.select_all_users().await? {
         println!("{:?}", user);
     }
+
+    DB.test_unsafe_blocking("123123", 1111111f64).await?;
 
     Ok(())
 }
