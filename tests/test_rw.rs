@@ -1,6 +1,5 @@
 use anyhow::Result;
-use aqueue::model::RwModel;
-use aqueue::RwQueue;
+use aqueue::{RwModel, RwQueue};
 use async_trait::async_trait;
 use futures_util::try_join;
 use std::cell::Cell;

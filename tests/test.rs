@@ -1,6 +1,5 @@
 use anyhow::Result;
-use aqueue::actor::Actor;
-use aqueue::AQueue;
+use aqueue::{AQueue, Actor};
 use async_trait::async_trait;
 use futures_util::try_join;
 use std::cell::Cell;
