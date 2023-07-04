@@ -1,6 +1,8 @@
 use std::cell::UnsafeCell;
 
-// Please do not use it at will
+/// Inner impl
+/// # Safety
+/// This is Thread Unsafe,Please do not use it at will.
 pub struct InnerStore<T>(UnsafeCell<T>);
 unsafe impl<T> Sync for InnerStore<T> {}
 unsafe impl<T> Send for InnerStore<T> {}

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.2 (2023-07-04)
+* update readme
+
 ## 1.3.1 (2023-07-03)
 * optimize RwModel
 * rename mut_call to call_mut
