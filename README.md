@@ -170,25 +170,27 @@ impl DataBases {
     pub fn new(sqlite_max_connections: u32) -> Result<RwModel<DataBases>> {
         let pool = SqlitePoolOptions::new()
             .max_connections(sqlite_max_connections)
-            .connect_lazy(&env::var("DATABASE_URL")?)?;
-
+            .connect_lazy("sqlite://:memory:")?;
         Ok(RwModel::new(DataBases { auto_id: 0, pool }))
     }
     /// create user table from table.sql
     async fn create_table(&self) -> Result<()> {
-        sqlx::query(include_str!("table.sql")).execute(&self.pool).await?;
+        sqlx::query(r#"
+            CREATE TABLE "user" (
+                "id" integer NOT NULL PRIMARY KEY,
+                "name" text,
+                "gold" real
+            );
+        "#).execute(&self.pool).await?;
         Ok(())
     }
     /// insert user data
-    async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {
-        // println!("insert {} name:{} gold:{}",self.auto_id,name,gold);
+    async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {     
         self.auto_id += 1;
-        let row = sqlx::query(
-            r#"
+        let row = sqlx::query(r#"
             insert into `user`(`id`,`name`,`gold`)
-            values(?,?,?)
-         "#,
-        )
+            values(?,?,?)"#
+            )
             .bind(&self.auto_id)
             .bind(name)
             .bind(gold)
@@ -227,7 +229,6 @@ impl IDatabase for RwModel<DataBases> {
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
         self.call_mut(|inner| async move { inner.insert_user(name, gold).await }).await
     }
-
     async fn select_all_users(&self) -> Result<Vec<User>> {
         self.call(|inner| async move { inner.select_all_users().await }).await
     }
@@ -242,7 +243,6 @@ lazy_static::lazy_static! {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv::dotenv().ok().ok_or_else(|| anyhow!(".env file not found"))?;
     DB.create_table().await?;
     let mut join_vec = Vec::with_capacity(100);
     // create 100 tokio task run it.

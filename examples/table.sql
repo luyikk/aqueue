@@ -1,5 +1,5 @@
 CREATE TABLE "user" (
-                        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        "name" text,
-                        "gold" real
+    "id" integer NOT NULL PRIMARY KEY,
+    "name" text,
+    "gold" real
 );
