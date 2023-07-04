@@ -53,7 +53,7 @@ macro_rules! inner_wait {
 /// need on feature "tokio_time" or "async_std_time"
 /// # tokio runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["tokio_time"] }
+/// aqueue = { version = "^1.3.2", features = ["tokio_time"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -73,7 +73,7 @@ macro_rules! call_mut_wait {
 /// need on feature "tokio_time" or "async_std_time"
 /// # tokio runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["async_std_time"] }
+/// aqueue = { version = "^1.3.2", features = ["async_std_time"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -93,7 +93,7 @@ macro_rules! call_mut_wait {
 /// need on feature "tokio_time" or "async_std_time"
 /// # tokio runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["tokio_time"] }
+/// aqueue = { version = "^1.3.2", features = ["tokio_time"] }
 /// ```
 /// # Example
 /// ``` ignore
@@ -113,7 +113,7 @@ macro_rules! call_wait {
 /// need on feature "tokio_time" or "async_std_time"
 /// # tokio runtime:
 /// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["async_std_time"] }
+/// aqueue = { version = "^1.3.2", features = ["async_std_time"] }
 /// ```
 /// # Example
 /// ``` ignore
