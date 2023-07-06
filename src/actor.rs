@@ -5,6 +5,8 @@ use std::future::Future;
 use std::ops::Deref;
 use std::sync::Arc;
 
+/// Actor Model
+/// Ensure Thread safety and high performance writing
 pub struct Actor<I> {
     inner: Arc<InnerStore<I>>,
     queue: AQueue,

@@ -2,6 +2,8 @@ use crate::inner_store::InnerStore;
 use crate::RwQueue;
 use std::future::Future;
 
+/// RwModel
+/// Ensure Thread safety and high performance reading and writing
 pub struct RwModel<I> {
     inner: InnerStore<I>,
     queue: RwQueue,
