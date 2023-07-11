@@ -331,31 +331,29 @@ async fn test_actor() -> Result<()> {
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_rw_model() -> Result<()> {
-
-    struct Foo{
-        i:i32
+    struct Foo {
+        i: i32,
     }
 
-    impl Foo{
-        async fn get(&self)->i32{
-            println!("get:{}",self.i);
+    impl Foo {
+        async fn get(&self) -> i32 {
+            println!("get:{}", self.i);
             tokio::time::sleep(Duration::from_secs(1)).await;
             self.i
         }
 
-        async fn set(&mut self,i:i32){
-            println!("set:{}",i);
-            self.i=i;
+        async fn set(&mut self, i: i32) {
+            println!("set:{}", i);
+            self.i = i;
         }
     }
 
     #[async_trait]
-    trait IFoo{
-        async fn get(&self)->i32;
-        async fn set(&self,i:i32);
+    trait IFoo {
+        async fn get(&self) -> i32;
+        async fn set(&self, i: i32);
     }
 
     #[async_trait]
@@ -369,9 +367,9 @@ async fn test_rw_model() -> Result<()> {
         }
     }
 
-    let foo=Arc::new(RwModel::new(Foo{i:0}));
+    let foo = Arc::new(RwModel::new(Foo { i: 0 }));
 
-    let mut joins=Vec::new();
+    let mut joins = Vec::new();
     for i in 0..100 {
         //Theoretically, it should be completed in 1 second
         //But adding sleep resulted in a long execution time
