@@ -6,6 +6,7 @@
 
 
 ##  Example **RwModel**
+### Suitable for situations with more reading and less writing
 ```rust
 use aqueue::RwModel;
 use async_trait::async_trait;
@@ -138,12 +139,13 @@ test rw a count:100000000 value:4999999950000000 time:5.1791396 qps:19308000
 test rw b count:100000000 value:4999999950000000 time:5.293417 qps:18892000
 ```
 
-## Example Database 
+## Example **Actor** Database
+### Suitable for high-performance environments
+### (use Actor Trait and Sqlx Sqlite)
 
-### (use RwModel Trait and Sqlx Sqlite)
 ```rust
 use anyhow::{anyhow, Result};
-use aqueue::{call_wait, RwModel};
+use aqueue::{inner_wait, Actor};
 use async_trait::async_trait;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
@@ -167,11 +169,12 @@ unsafe impl Send for DataBases {}
 unsafe impl Sync for DataBases {}
 
 impl DataBases {
-    pub fn new(sqlite_max_connections: u32) -> Result<RwModel<DataBases>> {
+    pub fn new(sqlite_max_connections: u32) -> Result<Actor<DataBases>> {
         let pool = SqlitePoolOptions::new()
             .max_connections(sqlite_max_connections)
             .connect_lazy("sqlite://:memory:")?;
-        Ok(RwModel::new(DataBases { auto_id: 0, pool }))
+
+        Ok(Actor::new(DataBases { auto_id: 0, pool }))
     }
     /// create user table from table.sql
     async fn create_table(&self) -> Result<()> {
@@ -185,12 +188,14 @@ impl DataBases {
         Ok(())
     }
     /// insert user data
-    async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {     
+    async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {
         self.auto_id += 1;
-        let row = sqlx::query(r#"
+        let row = sqlx::query(
+            r#"
             insert into `user`(`id`,`name`,`gold`)
-            values(?,?,?)"#
-            )
+            values(?,?,?)
+         "#,
+        )
             .bind(&self.auto_id)
             .bind(name)
             .bind(gold)
@@ -219,30 +224,35 @@ pub trait IDatabase {
 }
 
 #[async_trait]
-impl IDatabase for RwModel<DataBases> {
+impl IDatabase for Actor<DataBases> {
     async fn create_table(&self) -> Result<()> {
-        self.call_mut(|inner| async move { inner.create_table().await }).await
+        self.inner_call(|inner| async move { inner.get().create_table().await }).await
     }
     async fn insert_user(&self, name: String, gold: f64) -> Result<bool> {
-        self.call_mut(|inner| async move { inner.insert_user(&name, gold).await }).await
+        self.inner_call(|inner| async move { inner.get_mut().insert_user(&name, gold).await })
+            .await
     }
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
-        self.call_mut(|inner| async move { inner.insert_user(name, gold).await }).await
+        self.inner_call(|inner| async move { inner.get_mut().insert_user(name, gold).await })
+            .await
     }
     async fn select_all_users(&self) -> Result<Vec<User>> {
-        self.call(|inner| async move { inner.select_all_users().await }).await
+        unsafe {         
+            self.deref_inner().select_all_users().await
+        }
     }
 }
 
 lazy_static::lazy_static! {
     /// default global static database actor obj
-    static ref DB:RwModel<DataBases>={
+    static ref DB:Actor<DataBases>={
         DataBases::new(50).expect("install db error")
     };
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
+  
     DB.create_table().await?;
     let mut join_vec = Vec::with_capacity(100);
     // create 100 tokio task run it.

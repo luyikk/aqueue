@@ -37,7 +37,6 @@ impl DataBases {
     }
     /// insert user data
     async fn insert_user(&mut self, name: &str, gold: f64) -> Result<bool> {
-        // println!("insert {} name:{} gold:{}",self.auto_id,name,gold);
         self.auto_id += 1;
         let row = sqlx::query(
             r#"

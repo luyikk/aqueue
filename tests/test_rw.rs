@@ -330,3 +330,63 @@ async fn test_actor() -> Result<()> {
 
     Ok(())
 }
+
+
+#[tokio::test]
+async fn test_rw_model() -> Result<()> {
+
+    struct Foo{
+        i:i32
+    }
+
+    impl Foo{
+        async fn get(&self)->i32{
+            println!("get:{}",self.i);
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            self.i
+        }
+
+        async fn set(&mut self,i:i32){
+            println!("set:{}",i);
+            self.i=i;
+        }
+    }
+
+    #[async_trait]
+    trait IFoo{
+        async fn get(&self)->i32;
+        async fn set(&self,i:i32);
+    }
+
+    #[async_trait]
+    impl IFoo for RwModel<Foo> {
+        async fn get(&self) -> i32 {
+            self.call(|inner| async move { inner.get().await }).await
+        }
+
+        async fn set(&self, i: i32) {
+            self.call_mut(|inner| async move { inner.set(i).await }).await
+        }
+    }
+
+    let foo=Arc::new(RwModel::new(Foo{i:0}));
+
+    let mut joins=Vec::new();
+    for i in 0..100 {
+        //Theoretically, it should be completed in 1 second
+        //But adding sleep resulted in a long execution time
+        //So RWModel is still only suitable for environments with more read and less write.
+        tokio::time::sleep(Duration::from_millis(1)).await;
+        let foo = foo.clone();
+        joins.push(tokio::spawn(async move {
+            foo.get().await;
+            foo.set(i).await;
+        }))
+    }
+
+    for join in joins {
+        join.await?;
+    }
+
+    Ok(())
+}
