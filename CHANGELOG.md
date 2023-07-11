@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4 (2023-07-11)
+* upgrade async-lock to 2.7
+* modify readme
+
 ## 1.3.2 (2023-07-04)
 * update readme
 
