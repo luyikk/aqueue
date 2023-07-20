@@ -98,10 +98,10 @@ impl IDatabase for RwModel<DataBases> {
         self.call_mut(|inner| async move { inner.create_table().await }).await
     }
     async fn insert_user(&self, name: String, gold: f64) -> Result<bool> {
-        self.call_mut(|inner| async move { inner.insert_user(&name, gold).await }).await
+        self.call_mut(|mut inner| async move { inner.insert_user(&name, gold).await }).await
     }
     async fn insert_user_ref_name(&self, name: &str, gold: f64) -> Result<bool> {
-        self.call_mut(|inner| async move { inner.insert_user(name, gold).await }).await
+        self.call_mut(|mut inner| async move { inner.insert_user(name, gold).await }).await
     }
 
     async fn select_all_users(&self) -> Result<Vec<User>> {

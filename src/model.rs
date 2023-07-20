@@ -1,6 +1,32 @@
 use crate::inner_store::InnerStore;
 use crate::RwQueue;
 use std::future::Future;
+use std::ops::{Deref, DerefMut};
+
+/// RwMode mut ref
+pub struct RefMutInner<'a, T: ?Sized> {
+    value: &'a mut T,
+}
+
+impl<'a, T> RefMutInner<'a, T> {
+    #[inline]
+    pub fn new(value: &'a mut T) -> Self {
+        Self { value }
+    }
+}
+
+impl<T: ?Sized> Deref for RefMutInner<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        self.value
+    }
+}
+
+impl<T: ?Sized> DerefMut for RefMutInner<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.value
+    }
+}
 
 /// RwModel
 /// Ensure Thread safety and high performance reading and writing
@@ -29,11 +55,11 @@ impl<I: 'static> RwModel<I> {
 
     /// Behavior through queues,thread safe call async fn write ref mut
     #[inline]
-    pub async fn call_mut<'a, T, R>(&'a self, call: impl FnOnce(&'a mut I) -> T) -> R
+    pub async fn call_mut<'a, T, R>(&'a self, call: impl FnOnce(RefMutInner<'a, I>) -> T) -> R
     where
         T: Future<Output = R>,
     {
-        self.queue.write_run(call, self.inner.get_mut()).await
+        self.queue.write_run(call, RefMutInner { value: self.inner.get_mut() }).await
     }
 
     /// Behavior through queues,thread safe call async fn read ref
@@ -53,7 +79,7 @@ impl<I: 'static> RwModel<I> {
 
     ///Thread safe call async fn write, Balanced queues are not supported
     #[inline]
-    pub fn sync_mut_call<R>(&self, call: impl FnOnce(&mut I) -> R) -> R {
-        self.queue.sync_read_run(call, self.inner.get_mut())
+    pub fn sync_mut_call<R>(&self, call: impl FnOnce(RefMutInner<'_, I>) -> R) -> R {
+        self.queue.sync_write_run(call, RefMutInner { value: self.inner.get_mut() })
     }
 }

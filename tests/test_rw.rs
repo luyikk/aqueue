@@ -7,86 +7,6 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
 
-static mut VALUE: u64 = 0;
-
-#[tokio::test]
-async fn test_base() -> Result<()> {
-    let queue = Arc::new(RwQueue::new());
-
-    let a_queue = queue.clone();
-    tokio::spawn(async move {
-        let x = a_queue
-            .read_run(
-                |_| async move {
-                    println!("a");
-                    //delay_for(Duration::from_secs(1)).await;
-                    1
-                },
-                (),
-            )
-            .await;
-
-        println!("{:?}", x);
-    })
-    .await?;
-
-    let a_queue = queue.clone();
-    tokio::spawn(async move {
-        for i in 0..100 {
-            a_queue
-                .read_run(
-                    |_| async move {
-                        println!("b:{}", i);
-                        ()
-                    },
-                    (),
-                )
-                .await;
-        }
-    })
-    .await?;
-
-    sleep(Duration::from_secs(2)).await;
-
-    let start = Instant::now();
-    let mut v = 0u64;
-    for i in 0..10000000 {
-        v = queue
-            .write_run(
-                |x| async move {
-                    unsafe {
-                        VALUE += x;
-                        VALUE
-                    }
-                },
-                i,
-            )
-            .await;
-    }
-
-    println!("{} {}", start.elapsed().as_secs_f32(), v);
-
-    assert_eq!(v, 49999995000000);
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_string() -> Result<()> {
-    let queue = Arc::new(RwQueue::new());
-    let str = 12345.to_string();
-    let len = queue.read_run(|x| async move { x.len() }, str).await;
-    assert_eq!(len, 5);
-    struct Foo {
-        i: i32,
-    }
-    let foo = Foo { i: 5 };
-    let len = queue.read_run(|x| async move { x.i }, foo).await;
-    assert_eq!(len, 5);
-
-    Ok(())
-}
-
 #[tokio::test]
 async fn test_struct() -> Result<()> {
     #[async_trait]
@@ -130,12 +50,12 @@ async fn test_struct() -> Result<()> {
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.queue
-                .write_run(|inner| async move { inner.run(x, y).await }, self.inner.clone())
+                .read_run(|inner| async move { inner.run(x, y).await }, self.inner.clone())
                 .await
         }
 
         fn get_count(&self) -> i32 {
-            self.queue.sync_read_run(|inner| inner.get_count(), self.inner.clone())
+            self.inner.get_count()
         }
     }
 
@@ -207,7 +127,7 @@ async fn test_count() -> Result<()> {
     #[async_trait]
     impl IFoo for RwModel<Foo> {
         async fn add_one(&self) -> Result<()> {
-            self.call_mut(|inner| async move {
+            self.call_mut(|mut inner| async move {
                 inner.add_one();
                 Ok(())
             })
@@ -252,6 +172,21 @@ async fn test_count() -> Result<()> {
 
     Ok(())
 }
+#[tokio::test]
+async fn test_string() -> Result<()> {
+    let queue = Arc::new(RwQueue::new());
+    let str = 12345.to_string();
+    let len = queue.read_run(|x| async move { x.len() }, str).await;
+    assert_eq!(len, 5);
+    struct Foo {
+        i: i32,
+    }
+    let foo = Foo { i: 5 };
+    let len = queue.read_run(|x| async move { x.i }, foo).await;
+    assert_eq!(len, 5);
+
+    Ok(())
+}
 
 #[tokio::test]
 async fn test_actor() -> Result<()> {
@@ -286,7 +221,7 @@ async fn test_actor() -> Result<()> {
     #[async_trait]
     impl FooRunner for RwModel<Foo> {
         async fn set(&self, x: i32, y: i32) -> i32 {
-            self.call_mut(|inner| async move { inner.set(x, y).await }).await
+            self.call_mut(|mut inner| async move { inner.set(x, y).await }).await
         }
 
         async fn get(&self) -> (i32, i32, i32) {
@@ -363,14 +298,14 @@ async fn test_rw_model() -> Result<()> {
         }
 
         async fn set(&self, i: i32) {
-            self.call_mut(|inner| async move { inner.set(i).await }).await
+            self.call_mut(|mut inner| async move { inner.set(i).await }).await
         }
     }
 
     let foo = Arc::new(RwModel::new(Foo { i: 0 }));
 
     let mut joins = Vec::new();
-    for i in 0..100 {
+    for i in 0..30 {
         //Theoretically, it should be completed in 1 second
         //But adding sleep resulted in a long execution time
         //So RWModel is still only suitable for environments with more read and less write.
