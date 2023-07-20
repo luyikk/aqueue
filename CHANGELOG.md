@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.4 (2023-07-20)
+* fix RwModel call_mut ret mut ref
+
 ## 1.3.3 (2023-07-11)
 * upgrade async-lock to 2.7
 * modify readme
