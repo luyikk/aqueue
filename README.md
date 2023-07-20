@@ -49,10 +49,10 @@ pub trait FooRunner {
 #[async_trait]
 impl FooRunner for RwModel<Foo> {
     async fn add(&self, x: i32) -> i128 {
-        self.call_mut(|inner| async move { inner.add(x) }).await
+        self.call_mut(|mut inner| async move { inner.add(x) }).await
     }
     async fn reset(&self) {
-        self.call_mut(|inner| async move { inner.reset() }).await
+        self.call_mut(|mut inner| async move { inner.reset() }).await
     }
     async fn get(&self) -> i128 {
         self.call(|inner| async move { inner.get() }).await
