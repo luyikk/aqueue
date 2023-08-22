@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.5 (2023-08-22)
+* fix RwModel call ret ref
+
 ## 1.3.4 (2023-07-20)
 * fix RwModel call_mut ret mut ref
 
