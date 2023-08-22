@@ -22,7 +22,7 @@ impl<I: Default> Default for Actor<I> {
 }
 
 pub struct RefInner<'a, T: ?Sized> {
-    value: &'a T,
+    pub(crate) value: &'a T,
 }
 
 impl<T: ?Sized> Deref for RefInner<'_, T> {

@@ -1,3 +1,4 @@
+use crate::actor::RefInner;
 use crate::model::RefMutInner;
 use async_lock::RwLock;
 use std::future::Future;
@@ -52,10 +53,11 @@ impl RwQueue {
     /// Async write run fn
     /// It is based on the principle of first in, first run
     #[inline]
-    pub async fn write_run<'a, A, T, R>(&self, call: impl FnOnce(RefMutInner<'a, A>) -> T, arg: RefMutInner<'a, A>) -> R
+    pub async fn write_run<'a, A, T, R>(&self, call: impl FnOnce(RefMutInner<'a, A>) -> T, arg: &'a mut A) -> R
     where
         T: Future<Output = R>,
     {
+        let arg = RefMutInner { value: arg };
         let _guard = self.lock.write().await;
         call(arg).await
     }
@@ -63,10 +65,11 @@ impl RwQueue {
     /// Async write run fn
     /// It is based on the principle of first in, first run
     #[inline]
-    pub async fn read_run<A, T, R>(&self, call: impl FnOnce(A) -> T, arg: A) -> R
+    pub async fn read_run<'a, A, T, R>(&self, call: impl FnOnce(RefInner<'a, A>) -> T, arg: &'a A) -> R
     where
         T: Future<Output = R>,
     {
+        let arg = RefInner { value: arg };
         let _guard = self.lock.read().await;
         call(arg).await
     }

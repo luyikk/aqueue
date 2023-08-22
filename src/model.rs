@@ -1,3 +1,4 @@
+use crate::actor::RefInner;
 use crate::inner_store::InnerStore;
 use crate::RwQueue;
 use std::future::Future;
@@ -5,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 
 /// RwMode mut ref
 pub struct RefMutInner<'a, T: ?Sized> {
-    value: &'a mut T,
+    pub(crate) value: &'a mut T,
 }
 
 impl<'a, T> RefMutInner<'a, T> {
@@ -59,12 +60,12 @@ impl<I: 'static> RwModel<I> {
     where
         T: Future<Output = R>,
     {
-        self.queue.write_run(call, RefMutInner { value: self.inner.get_mut() }).await
+        self.queue.write_run(call, self.inner.get_mut()).await
     }
 
     /// Behavior through queues,thread safe call async fn read ref
     #[inline]
-    pub async fn call<'a, T, R>(&'a self, call: impl FnOnce(&'a I) -> T) -> R
+    pub async fn call<'a, T, R>(&'a self, call: impl FnOnce(RefInner<'a, I>) -> T) -> R
     where
         T: Future<Output = R>,
     {
