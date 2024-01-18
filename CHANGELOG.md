@@ -1,4 +1,6 @@
 # Changelog
+## 1.3.6 (2024-01-18)
+* replacement compatible with Rust 1.75
 
 ## 1.3.5 (2023-08-22)
 * fix RwModel call ret ref
