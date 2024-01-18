@@ -1,6 +1,5 @@
 use aqueue::RwModel;
 
-use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::try_join;
@@ -29,15 +28,13 @@ impl Foo {
     }
 }
 
-#[async_trait]
-pub trait FooRunner {
+trait FooRunner {
     async fn add(&self, x: i32) -> i128;
     async fn reset(&self);
     async fn get(&self) -> i128;
     async fn get_count(&self) -> u64;
 }
 
-#[async_trait]
 impl FooRunner for RwModel<Foo> {
     async fn add(&self, x: i32) -> i128 {
         self.call_mut(|mut inner| async move { inner.add(x) }).await

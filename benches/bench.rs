@@ -20,14 +20,12 @@ impl TestBench {
     }
 }
 
-#[async_trait::async_trait]
 trait ITestBench {
     async fn add(&self, i: usize) -> Result<()>;
     async fn clean(&self) -> Result<()>;
     fn get(&self) -> usize;
 }
 
-#[async_trait::async_trait]
 impl ITestBench for Actor<TestBench> {
     #[inline]
     async fn add(&self, i: usize) -> Result<()> {
@@ -53,7 +51,6 @@ impl ITestBench for Actor<TestBench> {
     }
 }
 
-#[async_trait::async_trait]
 impl ITestBench for RwModel<TestBench> {
     #[inline]
     async fn add(&self, i: usize) -> Result<()> {

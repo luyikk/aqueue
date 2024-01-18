@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use aqueue::{inner_wait, Actor};
-use async_trait::async_trait;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
@@ -59,8 +58,7 @@ impl DataBases {
     }
 }
 
-#[async_trait]
-pub trait IDatabase {
+pub(crate) trait IDatabase {
     /// create user table from table.sql
     async fn create_table(&self) -> Result<()>;
     /// insert user data
@@ -92,7 +90,6 @@ pub trait IDatabase {
     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool>;
 }
 
-#[async_trait]
 impl IDatabase for Actor<DataBases> {
     async fn create_table(&self) -> Result<()> {
         self.inner_call(|inner| async move { inner.get().create_table().await }).await

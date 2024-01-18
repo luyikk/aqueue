@@ -9,7 +9,6 @@
 ### Suitable for situations with more reading and less writing
 ```rust
 use aqueue::RwModel;
-use async_trait::async_trait;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::try_join;
@@ -38,15 +37,14 @@ impl Foo {
     }
 }
 
-#[async_trait]
-pub trait FooRunner {
+
+trait FooRunner {
     async fn add(&self, x: i32) -> i128;
     async fn reset(&self);
     async fn get(&self) -> i128;
     async fn get_count(&self) -> u64;
 }
 
-#[async_trait]
 impl FooRunner for RwModel<Foo> {
     async fn add(&self, x: i32) -> i128 {
         self.call_mut(|mut inner| async move { inner.add(x) }).await
@@ -146,7 +144,6 @@ test rw b count:100000000 value:4999999950000000 time:5.293417 qps:18892000
 ```rust
 use anyhow::{anyhow, Result};
 use aqueue::{inner_wait, Actor};
-use async_trait::async_trait;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
@@ -211,8 +208,8 @@ impl DataBases {
     }
 }
 
-#[async_trait]
-pub trait IDatabase {
+
+trait IDatabase {
     /// create user table from table.sql
     async fn create_table(&self) -> Result<()>;
     /// insert user data
@@ -223,7 +220,6 @@ pub trait IDatabase {
     async fn select_all_users(&self) -> Result<Vec<User>>;
 }
 
-#[async_trait]
 impl IDatabase for Actor<DataBases> {
     async fn create_table(&self) -> Result<()> {
         self.inner_call(|inner| async move { inner.get().create_table().await }).await
