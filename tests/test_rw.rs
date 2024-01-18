@@ -1,6 +1,6 @@
 use anyhow::Result;
 use aqueue::{RwModel, RwQueue};
-use async_trait::async_trait;
+
 use futures_util::try_join;
 use std::cell::Cell;
 use std::sync::Arc;
@@ -73,8 +73,8 @@ async fn test_base() -> Result<()> {
 
 #[tokio::test]
 async fn test_struct() -> Result<()> {
-    #[async_trait]
-    pub trait IFoo {
+    #[async_trait::async_trait]
+    trait IFoo {
         async fn run(&self, x: i32, y: i32) -> i32;
         fn get_count(&self) -> i32;
     }
@@ -83,8 +83,7 @@ async fn test_struct() -> Result<()> {
     }
 
     unsafe impl Sync for Foo {}
-
-    #[async_trait]
+    #[async_trait::async_trait]
     impl IFoo for Foo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.count.set(self.count.get() + 1);
@@ -110,7 +109,7 @@ async fn test_struct() -> Result<()> {
         }
     }
 
-    #[async_trait]
+    #[async_trait::async_trait]
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
             self.queue
@@ -182,13 +181,11 @@ async fn test_count() -> Result<()> {
         }
     }
 
-    #[async_trait]
     trait IFoo {
         async fn add_one(&self) -> Result<()>;
         async fn get_str(&self) -> Result<String>;
     }
 
-    #[async_trait]
     impl IFoo for RwModel<Foo> {
         async fn add_one(&self) -> Result<()> {
             self.call_mut(|mut inner| async move {
@@ -276,14 +273,12 @@ async fn test_actor() -> Result<()> {
         }
     }
 
-    #[async_trait]
-    pub trait FooRunner {
+    trait FooRunner {
         async fn set(&self, x: i32, y: i32) -> i32;
         async fn get(&self) -> (i32, i32, i32);
         async fn get_len<'a>(&'a self, b: &'a [u8]) -> usize;
     }
 
-    #[async_trait]
     impl FooRunner for RwModel<Foo> {
         async fn set(&self, x: i32, y: i32) -> i32 {
             self.call_mut(|mut inner| async move { inner.set(x, y).await }).await
@@ -350,13 +345,11 @@ async fn test_rw_model() -> Result<()> {
         }
     }
 
-    #[async_trait]
     trait IFoo {
         async fn get(&self) -> i32;
         async fn set(&self, i: i32);
     }
 
-    #[async_trait]
     impl IFoo for RwModel<Foo> {
         async fn get(&self) -> i32 {
             self.call(|inner| async move { inner.get().await }).await
