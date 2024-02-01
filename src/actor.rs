@@ -33,7 +33,7 @@ impl<T: ?Sized> Deref for RefInner<'_, T> {
     }
 }
 
-impl<I: 'static> Actor<I> {
+impl<I> Actor<I> {
     #[inline]
     pub fn new(x: I) -> Actor<I> {
         Actor {

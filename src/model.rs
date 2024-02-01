@@ -45,7 +45,7 @@ impl<I: Default> Default for RwModel<I> {
     }
 }
 
-impl<I: 'static> RwModel<I> {
+impl<I> RwModel<I> {
     #[inline]
     pub fn new(x: I) -> RwModel<I> {
         RwModel {

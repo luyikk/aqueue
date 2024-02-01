@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.8 (2024-02-01)
+* fix Actor RwModel inner  T:'static'
+
 ## 1.3.7 (2024-02-01)
 * fix queue customized Future Synchronization issues
 
