@@ -1,4 +1,8 @@
 # Changelog
+
+## 1.3.7 (2024-02-01)
+* fix queue customized Future Synchronization issues
+
 ## 1.3.6 (2024-01-18)
 * replacement compatible with Rust 1.75
 

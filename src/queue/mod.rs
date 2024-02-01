@@ -34,23 +34,14 @@ impl AQueue {
         }
     }
 
-    /// Async run fn
-    /// It is based on the principle of first in, first run
+    /// Async lock run fn
+    /// The greatest truths are the simplest
     #[inline]
     pub async fn run<A, T, R>(&self, call: impl FnOnce(A) -> T, arg: A) -> R
     where
         T: Future<Output = R>,
     {
-        self.check_run(call(arg)).await
-    }
-
-    /// The greatest truths are the simplest
-    #[inline]
-    async fn check_run<R, T>(&self, future: T) -> R
-    where
-        T: Future<Output = R>,
-    {
         let _guard = self.lock.lock().await;
-        future.await
+        call(arg).await
     }
 }

@@ -75,7 +75,7 @@ pub(crate) trait IDatabase {
     ///       call DB test_unsafe_blocking
     ///  ────────────────────┐
     ///                      │
-    ///                      ▼
+    ///                      │
     ///      ┌───────────────▼────────────┐
     ///      │    inner call lock current │
     ///  ┌──►│         thread             │
