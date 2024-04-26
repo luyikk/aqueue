@@ -24,7 +24,7 @@ impl<I> PCModel<I> {
         &self.inner
     }
 
-    /// Behavior through queues,thread safe call async fn read ref
+    /// Behavior through queues,thread parallelism control call async fn read ref
     #[inline]
     pub async fn call<'a, T, R>(&'a self, call: impl FnOnce(&'a I) -> T) -> R
     where
