@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0 (2024-04-26)
+* upgrade async-lock to 3.0
+* add PCModel
+
 ## 1.3.7 (2024-02-01)
 * fix queue customized Future Synchronization issues
 
