@@ -70,4 +70,22 @@ async fn test_pc_model() {
     }
 
     assert!(now.elapsed().as_secs() >= 2 && now.elapsed().as_secs() < 3);
+
+    println!("--------------------------------------");
+
+    let mut tasks = vec![];
+
+    let now = std::time::Instant::now();
+    for i in 0..10 {
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        let foo = foo.clone();
+        tasks.push(tokio::spawn(async move { foo.pc_run(i).await }))
+    }
+
+    for task in tasks {
+        let i = task.await.unwrap();
+        println!("pc mode {i}: finished");
+    }
+
+    assert!(now.elapsed().as_secs() >= 2 && now.elapsed().as_secs() < 3);
 }
