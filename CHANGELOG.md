@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.1 (2024-04-26)
+* rename PCModel get_inner() to inner()
+
 ## 1.4.0 (2024-04-26)
 * upgrade async-lock to 3.0
 * add PCModel

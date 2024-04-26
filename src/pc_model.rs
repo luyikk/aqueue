@@ -18,8 +18,9 @@ impl<I> PCModel<I> {
         }
     }
 
+    /// Get the inner value reference
     #[inline]
-    pub fn get_inner(&self) -> &I {
+    pub fn inner(&self) -> &I {
         &self.inner
     }
 
