@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0 (2024-04-26)
+## 1.4.0 (2024-04-26)
 * upgrade async-lock to 3.0
 * add PCModel
 
