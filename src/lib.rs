@@ -1,13 +1,17 @@
 mod actor;
 mod inner_store;
-mod model;
-mod queue;
-mod queue_rwlock;
+mod mutex;
+mod pc_model;
+mod rw_model;
+mod rwlock;
+mod semaphore;
 
 pub use actor::Actor;
-pub use model::RwModel;
-pub use queue::AQueue;
-pub use queue_rwlock::RwQueue;
+pub use mutex::AQueue;
+pub use pc_model::PCModel;
+pub use rw_model::RwModel;
+pub use rwlock::RwQueue;
+pub use semaphore::SemaphoreQueue;
 
 /// inner call wait ms throw time error
 /// need on feature "tokio_time" or "async_std_time"

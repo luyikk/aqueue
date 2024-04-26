@@ -2,7 +2,7 @@ use async_lock::Mutex;
 use std::future::Future;
 use std::hint::spin_loop;
 
-/// async future thread safe queue
+/// async future thread safe mutex
 pub struct AQueue {
     lock: Mutex<()>,
 }
@@ -21,7 +21,7 @@ impl AQueue {
     }
 
     /// Sync run fn
-    /// Note: it is not based on fair lock. It will never be called when the queue has unprocessed
+    /// Note: it is not based on fair lock. It will never be called when the mutex has unprocessed
     #[inline]
     pub fn sync_run<A, R>(&self, call: impl FnOnce(A) -> R, arg: A) -> R {
         loop {

@@ -1,10 +1,10 @@
 use crate::actor::RefInner;
-use crate::model::RefMutInner;
+use crate::rw_model::RefMutInner;
 use async_lock::RwLock;
 use std::future::Future;
 use std::hint::spin_loop;
 
-/// async future thread safe queue for Rwlock
+/// async future thread safe mutex for Rwlock
 pub struct RwQueue {
     lock: RwLock<()>,
 }
@@ -23,7 +23,7 @@ impl RwQueue {
     }
 
     /// Sync write run fn
-    /// Note: it is not based on fair lock. It will never be called when the queue has unprocessed
+    /// Note: it is not based on fair lock. It will never be called when the mutex has unprocessed
     #[inline]
     pub fn sync_write_run<A, R>(&self, call: impl FnOnce(RefMutInner<'_, A>) -> R, arg: RefMutInner<'_, A>) -> R {
         loop {
@@ -37,7 +37,7 @@ impl RwQueue {
     }
 
     /// Sync run fn
-    /// Note: it is not based on fair lock. It will never be called when the queue has unprocessed
+    /// Note: it is not based on fair lock. It will never be called when the mutex has unprocessed
     #[inline]
     pub fn sync_read_run<A, R>(&self, call: impl FnOnce(A) -> R, arg: A) -> R {
         loop {
