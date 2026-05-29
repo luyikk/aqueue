@@ -3,11 +3,12 @@ use aqueue::{RwModel, RwQueue};
 
 use futures_util::try_join;
 use std::cell::Cell;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
 
-static mut VALUE: u64 = 0;
+static VALUE: AtomicU64 = AtomicU64::new(0);
 
 #[tokio::test]
 async fn test_base() -> Result<()> {
@@ -37,7 +38,6 @@ async fn test_base() -> Result<()> {
                 .read_run(
                     |_| async move {
                         println!("b:{}", i);
-                        ()
                     },
                     &(),
                 )
@@ -54,10 +54,8 @@ async fn test_base() -> Result<()> {
         v = queue
             .write_run(
                 |x| async move {
-                    unsafe {
-                        VALUE += *x;
-                        VALUE
-                    }
+                    VALUE.fetch_add(*x, Ordering::Relaxed);
+                    VALUE.load(Ordering::Relaxed)
                 },
                 &mut i,
             )
@@ -319,7 +317,7 @@ async fn test_actor() -> Result<()> {
 
     assert_eq!((300, 34550, 35150), a_foo.get().await);
 
-    let buff = vec![1, 2, 3, 4, 5];
+    let buff = [1u8, 2, 3, 4, 5];
     let x = { a_foo.get_len(&buff[..]).await };
     assert_eq!(buff.len(), x);
 

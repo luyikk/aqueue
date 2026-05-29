@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.2 (2026-05-29)
+* update documentation and improve thread safety in actor model
+
 ## 1.4.1 (2024-04-26)
 * rename PCModel get_inner() to inner()
 

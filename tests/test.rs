@@ -2,11 +2,12 @@ use anyhow::Result;
 use aqueue::{AQueue, Actor};
 use futures_util::try_join;
 use std::cell::Cell;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
 
-static mut VALUE: u64 = 0;
+static VALUE: AtomicU64 = AtomicU64::new(0);
 
 #[tokio::test]
 async fn test_base() -> Result<()> {
@@ -21,7 +22,7 @@ async fn test_base() -> Result<()> {
                     //delay_for(Duration::from_secs(1)).await;
                     1
                 },
-                (),
+                &(),
             )
             .await;
 
@@ -36,9 +37,8 @@ async fn test_base() -> Result<()> {
                 .run(
                     |_| async move {
                         println!("b:{}", i);
-                        ()
                     },
-                    (),
+                    &(),
                 )
                 .await;
         }
@@ -53,12 +53,10 @@ async fn test_base() -> Result<()> {
         v = queue
             .run(
                 |x| async move {
-                    unsafe {
-                        VALUE += x;
-                        VALUE
-                    }
+                    VALUE.fetch_add(*x, Ordering::Relaxed);
+                    VALUE.load(Ordering::Relaxed)
                 },
-                i,
+                &i,
             )
             .await;
     }
@@ -74,13 +72,13 @@ async fn test_base() -> Result<()> {
 async fn test_string() -> Result<()> {
     let queue = Arc::new(AQueue::new());
     let str = 12345.to_string();
-    let len = queue.run(|x| async move { x.len() }, str).await;
+    let len = queue.run(|x| async move { x.len() }, &str).await;
     assert_eq!(len, 5);
     struct Foo {
         i: i32,
     }
     let foo = Foo { i: 5 };
-    let len = queue.run(|x| async move { x.i }, foo).await;
+    let len = queue.run(|x| async move { x.i }, &foo).await;
     assert_eq!(len, 5);
 
     Ok(())
@@ -127,7 +125,7 @@ async fn test_struct() -> Result<()> {
     #[async_trait::async_trait]
     impl IFoo for MakeActorIFoo {
         async fn run(&self, x: i32, y: i32) -> i32 {
-            self.queue.run(|inner| async move { inner.run(x, y).await }, self.inner.clone()).await
+            self.queue.run(|inner| async move { inner.run(x, y).await }, &self.inner).await
         }
 
         fn get_count(&self) -> i32 {
@@ -316,7 +314,7 @@ async fn test_actor() -> Result<()> {
 
     assert_eq!((300, 34550, 35150), a_foo.get().await);
 
-    let buff = vec![1, 2, 3, 4, 5];
+    let buff = [1u8, 2, 3, 4, 5];
     let x = { a_foo.get_len(&buff[..]).await };
     assert_eq!(buff.len(), x);
 

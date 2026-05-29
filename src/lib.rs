@@ -1,3 +1,24 @@
+//! # aqueue — Fast, Thread-Safe Async Execution Queue
+//!
+//! `aqueue` provides three concurrency models for protecting shared state in
+//! async Rust code, each backed by a different locking primitive:
+//!
+//! | Type | Primitive | Best for |
+//! |---|---|---|
+//! | [`Actor<I>`] | Mutex | serial / write-heavy workloads |
+//! | [`RwModel<I>`] | RwLock | read-heavy workloads |
+//! | [`PCModel<I>`] | Semaphore | bounded parallelism / rate limiting |
+//!
+//! The low-level queue primitives ([`AQueue`], [`RwQueue`], [`SemaphoreQueue`])
+//! are also exported for custom use cases.
+//!
+//! ## Feature flags
+//!
+//! | Flag | Effect |
+//! |---|---|
+//! | `tokio_time` | Enables [`inner_wait!`], [`call_wait!`], [`call_mut_wait!`] with tokio timeouts |
+//! | `async_std_time` | Same macros backed by async-std timeouts |
+
 mod actor;
 mod inner_store;
 mod mutex;
@@ -13,17 +34,21 @@ pub use rw_model::RwModel;
 pub use rwlock::RwQueue;
 pub use semaphore::SemaphoreQueue;
 
-/// inner call wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # tokio runtime:
-/// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["tokio_time"] }
+/// Run [`Actor::inner_call`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `tokio_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["tokio_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         inner_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = inner_wait!(actor, 5000, |inner| async move {
+///     inner.get_mut().do_work()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "tokio_time", not(feature = "async_std_time")))]
 #[macro_export]
@@ -33,17 +58,21 @@ macro_rules! inner_wait {
     };
 }
 
-/// inner call wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # async_std runtime:
-/// ``` toml
-/// aqueue = { version = "^1.2.10", features = ["async_std_time"] }
+/// Run [`Actor::inner_call`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `async_std_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["async_std_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         inner_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = inner_wait!(actor, 5000, |inner| async move {
+///     inner.get_mut().do_work()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "async_std_time", not(feature = "tokio_time")))]
 #[macro_export]
@@ -53,17 +82,21 @@ macro_rules! inner_wait {
     };
 }
 
-/// call_mut wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # tokio runtime:
-/// ``` toml
-/// aqueue = { version = "^1.3.2", features = ["tokio_time"] }
+/// Run [`RwModel::call_mut`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `tokio_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["tokio_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         call_mut_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = call_mut_wait!(model, 5000, |mut inner| async move {
+///     inner.mutate()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "tokio_time", not(feature = "async_std_time")))]
 #[macro_export]
@@ -73,17 +106,21 @@ macro_rules! call_mut_wait {
     };
 }
 
-/// call_mut wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # tokio runtime:
-/// ``` toml
-/// aqueue = { version = "^1.3.2", features = ["async_std_time"] }
+/// Run [`RwModel::call_mut`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `async_std_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["async_std_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         call_mut_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = call_mut_wait!(model, 5000, |mut inner| async move {
+///     inner.mutate()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "async_std_time", not(feature = "tokio_time")))]
 #[macro_export]
@@ -93,17 +130,21 @@ macro_rules! call_mut_wait {
     };
 }
 
-/// call wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # tokio runtime:
-/// ``` toml
-/// aqueue = { version = "^1.3.2", features = ["tokio_time"] }
+/// Run [`RwModel::call`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `tokio_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["tokio_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         call_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = call_wait!(model, 5000, |inner| async move {
+///     inner.read_value()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "tokio_time", not(feature = "async_std_time")))]
 #[macro_export]
@@ -113,17 +154,21 @@ macro_rules! call_wait {
     };
 }
 
-/// call wait ms throw time error
-/// need on feature "tokio_time" or "async_std_time"
-/// # tokio runtime:
-/// ``` toml
-/// aqueue = { version = "^1.3.2", features = ["async_std_time"] }
+/// Run [`RwModel::call`] with a millisecond timeout, returning
+/// `Err` if the deadline is exceeded.
+///
+/// Requires the `async_std_time` feature.
+///
+/// ```toml
+/// aqueue = { version = "^1.4", features = ["async_std_time"] }
 /// ```
+///
 /// # Example
-/// ``` ignore
-///     async fn test_unsafe_blocking(&self, name: String, gold: f64) -> Result<bool> {
-///         call_wait!(self, 30000, |_inner| async move { DB.insert_user(name, gold).await }).await?
-///     }
+///
+/// ```ignore
+/// let result = call_wait!(model, 5000, |inner| async move {
+///     inner.read_value()
+/// }).await?;
 /// ```
 #[cfg(all(feature = "async_std_time", not(feature = "tokio_time")))]
 #[macro_export]
